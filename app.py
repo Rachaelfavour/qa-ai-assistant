@@ -29,21 +29,28 @@ st.title("QA Assistant Chatbot 🤖")
 
 user_input = st.text_input("Ask a QA question:")
 
-# Search logic
 if user_input:
     user_input = user_input.lower()
     st.write("### Suggested Answer")
 
-    found = False
+    results = []
 
     for title, data in sections:
         for word in user_input.split():
             if word in title.lower():
-                st.write(f"## {title}")
-                for item in data:
-                    st.write(f"- {item}")
-                found = True
+                results.append((title, data))
                 break
 
-    if not found:
-        st.write("No match found. Try: login, api, upload, etc.")
+    # ✅ SHOW ALL if user types 'all'
+    if "all" in user_input:
+        results = sections
+
+    # ✅ OUTPUT
+    if results:
+        for title, data in results:
+            st.write(f"## {title}")
+            for item in data:
+                st.write(f"- {item}")
+            st.write("")
+    else:
+        st.write("No match found. Try: login, api, upload, or type 'all'")
