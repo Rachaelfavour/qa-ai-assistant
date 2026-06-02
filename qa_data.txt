@@ -1,0 +1,13 @@
+
+LOGIN
+- Valid login with correct credentials
+- Invalid password
+
+LOGOUT
+- Successful logout
+- Session timeout logout
+
+UPLOAD DOCUMENT
+- Upload valid document
+- Upload invalid file
+``
