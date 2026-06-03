@@ -6,7 +6,7 @@ with open("qa_data.txt", "r") as f:
     content = f.read()
 
 # Split sections
-sections = re.split(r"\n(?=[A-Z ]+ -|===)", content)
+sections = re.split(r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING)", content)
 
 st.title("QA Assistant Chatbot 🤖")
 
@@ -19,7 +19,7 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ Keyword mapping (includes password reset fix)
+    # ✅ Keyword mapping (FIXED SECURITY HERE)
     keyword_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -29,13 +29,22 @@ if query:
         "download": ["download"],
         "password": ["password reset"],
         "reset": ["password reset"],
+
+        # ✅ SECURITY MAPPING (IMPORTANT FIX)
         "security": ["sql", "xss", "session", "authentication", "authorization"],
-        "xss": ["xss"],
-        "sql": ["sql"],
-        "session": ["session"]
+        "sql": ["sql injection"],
+        "xss": ["xss", "cross-site scripting"],
+        "session": ["session"],
+
+        "api": ["api"],
+        "performance": ["performance"],
+        "database": ["database"],
+        "accessibility": ["accessibility"],
+        "regression": ["regression"],
+        "ui": ["ui"]
     }
 
-    # ✅ detect filter (positive / negative / edge)
+    # ✅ detect filter
     filter_type = None
     if "positive" in query:
         filter_type = "positive"
@@ -59,21 +68,28 @@ if query:
             results.append(section)
             continue
 
-        # ✅ match module
-        if matched_group:
-            if any(word in title for word in keyword_map[matched_group]):
-
-                # ✅ APPLY FILTER (THIS IS THE FIX)
+        # ✅ SECURITY FIX (SPECIAL HANDLING)
+        if matched_group == "security":
+            if any(word in title for word in ["sql", "xss", "session", "authentication", "authorization"]):
                 if filter_type:
                     if filter_type in title:
                         results.append(section)
                 else:
                     results.append(section)
 
-    # ✅ remove duplicates
+        # ✅ normal modules
+        elif matched_group:
+            if any(word in title for word in keyword_map[matched_group]):
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
+
+    # remove duplicates
     results = list(dict.fromkeys(results))
 
-    # ✅ display
+    # display
     if results:
         for sec in results:
             st.text(sec)
@@ -86,4 +102,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: login positive, password reset negative, etc.")
+        st.write("No match found. Try: security, login, password reset, or type 'all'")
