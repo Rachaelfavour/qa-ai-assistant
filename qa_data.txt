@@ -310,32 +310,18 @@ UI NON-FUNCTIONAL - E2E SCENARIO
 
 SQL INJECTION
 
-POSITIVE
-- Verify system handles valid inputs securely
-
-NEGATIVE
-- Attempt SQL injection and verify system blocks it
-- Verify queries are parameterized
-- Verify no sensitive data exposed in error messages
-
-- Cross-site scripting (XSS)
-- Session hijacking protection
-- Authorization validation
-- Authentication bypass attempts
-
-
-=== SECURITY TESTING ===
-
-SQL INJECTION
-
 SQL INJECTION - POSITIVE
+- Verify system handles valid inputs securely
 - Verify system accepts valid input without triggering security alerts
 - Verify database queries execute correctly with safe input
+- Verify safe queries return expected database results
 
 SQL INJECTION - NEGATIVE
 - Attempt SQL injection using input fields (e.g., ' OR '1'='1) and verify it is blocked
 - Verify application uses parameterized queries to prevent injection
 - Verify system does not expose database errors or sensitive information
+- Attempt SQL injection and verify system blocks it
+- Verify no sensitive data exposed in error messages
 
 SQL INJECTION - EDGE CASES
 - Inject complex SQL statements and verify system handles securely
@@ -346,18 +332,47 @@ SQL INJECTION - EDGE CASES
 CROSS-SITE SCRIPTING (XSS)
 
 XSS - POSITIVE
+- Session hijacking protection
+- Authorization validation
+- Authentication bypass attempts
 - Verify normal user input is processed and displayed correctly
 - Verify allowed HTML formatting works where applicable
+- Verify application processes valid user input without errors
+- Verify allowed content (safe text/formatting) displays correctly
 
 XSS - NEGATIVE
 - Attempt script injection (e.g., <script>alert()</script>) and verify it is blocked
 - Verify input fields sanitize user input properly
 - Verify output encoding prevents script execution
+- Enter malicious script (<script>alert('test')</script>) and verify it is not executed
+- Verify user inputs are sanitized and encoded to prevent script execution
+- Verify scripts injected via form fields are blocked
+- Verify scripts injected via URL parameters are not executed
 
 XSS - EDGE CASES
 - Inject scripts through URL parameters
 - Inject scripts through file upload or form submission
 - Verify system stability when multiple malicious inputs are attempted
+- Attempt script injection in multiple fields simultaneously and verify system stability
+- Attempt script injection through file uploads and verify it is blocked
+- Verify system does not crash when handling unexpected script inputs
+
+SESSION HIJACKING PROTECTION
+
+POSITIVE SCENARIOS
+- Verify session is created after successful login
+- Verify session remains active during valid user activity
+- Verify session is unique per logged-in user
+
+NEGATIVE SCENARIOS
+- Attempt to reuse session after logout and verify access is denied
+- Attempt to use expired session token and verify rejection
+- Attempt session access from different browser/device and verify security behavior
+
+EDGE CASES
+- Logout from one tab and verify session is invalidated across all tabs
+- Simulate session reuse and verify it is blocked
+- Test behavior when session expires during active usage
 
 
 AUTHENTICATION & AUTHORIZATION
@@ -375,6 +390,9 @@ EDGE CASES
 - Try session reuse after logout and verify access denied
 - Attempt access with expired session token
 - Attempt simultaneous session usage and verify behavior
+- Attempt access using expired or invalid tokens
+- Attempt simultaneous logins and verify system behavior
+- Verify role changes are applied correctly without unauthorized access
 
 
 SESSION MANAGEMENT
@@ -397,10 +415,10 @@ DATA SECURITY
 
 POSITIVE
 - Verify sensitive data is encrypted (passwords, personal data)
-- Verify secure communication (HTTPS) is enforced
+- Verify secure communication (HTTPS) is enforced and HTTP requests are redirected or blocked
 
 NEGATIVE
-- Attempt to access sensitive data without authorization
+-  Attempt to access sensitive data without authorization and verify restriction
 - Verify no sensitive data is exposed in logs or UI
 
 EDGE CASES
@@ -411,18 +429,18 @@ EDGE CASES
 API SECURITY
 
 POSITIVE
-- Verify API calls work with valid authentication tokens
+-  Verify API requests with valid authentication return correct response
 - Verify secure endpoints return correct responses
 
 NEGATIVE
 - Verify unauthorized API calls return 401
-- Verify forbidden requests return 403
+- Verify forbidden access returns 403 error
 - Attempt token manipulation and verify rejection
 
 EDGE CASES
-- Test expired tokens and verify refresh or rejection
-- Simulate brute force attempts on API endpoints
-- Verify rate limiting prevents abuse
+- Test expired tokens and verify correct handling
+- Simulate brute force attacks on API endpoints
+- Verify rate limiting prevents excessive requests
 
 
 SECURITY TESTING - E2E SCENARIO
@@ -430,7 +448,7 @@ SECURITY TESTING - E2E SCENARIO
 - Attempt unauthorized access to restricted page
 - Perform valid action within role permissions
 - Attempt malicious input (SQL/XSS)
-- Verify system blocks and logs activity
+- Verify system blocks attack and logs activity
 - Logout and verify session termination
 
 
