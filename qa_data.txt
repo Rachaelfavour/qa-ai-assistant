@@ -220,7 +220,7 @@ SEARCH - E2E SCENARIO
 - Perform subsequent action (e.g., view details or proceed)
 
 
-VEHICLE MODULE
+VEHICLE MODULE SCENARIOS
 
 VEHICLE SEARCH
 - Verify valid search results
@@ -238,7 +238,7 @@ RELATED VEHICLE
 - Verify navigation works correctly
 
 
-ORDER MODULE
+ORDER MODULE SCENARIOS
 
 QUOTE SUMMARY
 - Verify correct price calculation
@@ -254,7 +254,7 @@ ORDER JOURNEY - E2E
 - Order confirmation
 
 
-CHECKOUT / PAYMENT
+CHECKOUT / PAYMENT SCENARIOS
 
 POSITIVE
 - Verify successful payment with valid card
@@ -270,7 +270,7 @@ EDGE CASES
 - Verify network failure handling
 
 
-API TESTING
+API TESTING SCENARIOS
 
 API POSITIVE
 - Verify valid API request response
@@ -289,7 +289,7 @@ API PERFORMANCE
 - Verify rate limiting
 
 
-UI / FRONTEND
+UI / FRONTEND SCENARIOS
 
 UI FUNCTIONAL - POSITIVE
 - Verify all buttons trigger correct actions
@@ -314,6 +314,9 @@ UI FUNCTIONAL - EDGE CASES (NEGATIVE)
 - Enter extremely long input values and verify UI handling
 - Perform rapid repeated clicks and verify no duplication or error
 - Try unexpected user actions (double submit, refresh page mid-action)
+
+
+UI NON-FUNCTIONAL SCENARIOS
 
 UI NON-FUNCTIONAL - POSITIVE
 - Verify responsive design works across mobile, tablet, and desktop
@@ -349,7 +352,7 @@ UI NON-FUNCTIONAL - E2E SCENARIO
 - Verify UI remains responsive and stable throughout
 
 
-SECURITY TESTING
+SECURITY SCENARIOS
 
 SQL INJECTION
 
@@ -401,7 +404,7 @@ XSS - EDGE CASES
 - Verify system does not crash when handling unexpected script inputs
 
 
-SESSION HIJACKING PROTECTION
+SESSION HIJACKING PROTECTION SCENARIOS
 
 POSITIVE SCENARIOS
 - Verify session is created after successful login
@@ -419,7 +422,7 @@ EDGE CASES
 - Test behavior when session expires during active usage
 
 
-AUTHENTICATION & AUTHORIZATION
+AUTHENTICATION & AUTHORIZATION SCENARIOS
 
 POSITIVE
 - Verify only valid users can access system features
@@ -439,7 +442,7 @@ EDGE CASES
 - Verify role changes are applied correctly without unauthorized access
 
 
-SESSION MANAGEMENT
+SESSION MANAGEMENT SCENARIOS
 
 POSITIVE
 - Verify session starts after login
@@ -455,7 +458,7 @@ EDGE CASES
 - Test behavior during network interruption
 
 
-DATA SECURITY
+DATA SECURITY SCENARIOS
 
 POSITIVE
 - Verify sensitive data is encrypted (passwords, personal data)
@@ -470,7 +473,7 @@ EDGE CASES
 - Verify system behavior during encryption/decryption failures
 
 
-API SECURITY
+API SECURITY SCENARIOS
 
 POSITIVE
 -  Verify API requests with valid authentication return correct response
@@ -496,7 +499,7 @@ SECURITY TESTING - E2E SCENARIO
 - Logout and verify session termination
 
 
-PERFORMANCE TESTING
+PERFORMANCE SCENARIOS
 
 PERFORMANCE TESTING - POSITIVE
 - Verify system handles expected user load without degradation
@@ -525,7 +528,7 @@ PERFORMANCE TESTING - E2E SCENARIO
 - Measure response time across workflows
 - Validate system stability and throughput under load
 
-ATABASE TESTING
+DATABASE SCENARIOS
 
 DATABASE TESTING - POSITIVE
 - Verify data is saved correctly after valid transactions
@@ -578,7 +581,8 @@ DATABASE TESTING - E2E SCENARIO
 - Simulate failure and verify rollback
 - Verify data consistency after complete flow
 
-ACCESSIBILITY
+
+ACCESSIBILITY SCENARIOS
 
 ACCESSIBILITY - POSITIVE
 - Verify full keyboard navigation is supported across all pages
@@ -608,7 +612,8 @@ ACCESSIBILITY - E2E SCENARIO
 - Perform actions without mouse
 - Verify accessibility compliance throughout the journey
 
-REGRESSION TESTING
+
+REGRESSION SCENARIOS
 
 REGRESSION TESTING - POSITIVE
 - Verify existing functionalities work after new feature implementation
