@@ -1,11 +1,11 @@
 import streamlit as st
 import re
 
-# ✅ Load QA data
+# Load data
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ Split sections (handles === headings + normal titles)
+# Split sections
 sections = re.split(r"\n(?=[A-Z ]+ -|===)", content)
 
 st.title("QA Assistant Chatbot 🤖")
@@ -19,7 +19,7 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ KEYWORD MAPPING (THIS FIXES PASSWORD RESET)
+    # ✅ Keyword mapping (includes password reset fix)
     keyword_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -30,43 +30,50 @@ if query:
         "password": ["password reset"],
         "reset": ["password reset"],
         "security": ["sql", "xss", "session", "authentication", "authorization"],
-        "xss": ["xss", "cross-site scripting"],
-        "sql": ["sql injection"],
-        "session": ["session"],
-        "api": ["api"],
-        "performance": ["performance"],
-        "database": ["database"],
-        "accessibility": ["accessibility"],
-        "regression": ["regression"],
-        "ui": ["ui"]
+        "xss": ["xss"],
+        "sql": ["sql"],
+        "session": ["session"]
     }
 
-    # ✅ Detect module from full sentence
-    matched_group = None
+    # ✅ detect filter (positive / negative / edge)
+    filter_type = None
+    if "positive" in query:
+        filter_type = "positive"
+    elif "negative" in query:
+        filter_type = "negative"
+    elif "edge" in query:
+        filter_type = "edge"
 
+    # ✅ detect module
+    matched_group = None
     for key, keywords in keyword_map.items():
         if any(word in query for word in keywords):
             matched_group = key
             break
 
     for section in sections:
-        section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
 
-        # ✅ SHOW EVERYTHING
+        # ✅ show all
         if "all" in query:
             results.append(section)
             continue
 
-        # ✅ MATCH MODULE
+        # ✅ match module
         if matched_group:
             if any(word in title for word in keyword_map[matched_group]):
-                results.append(section)
 
-    # ✅ REMOVE DUPLICATES
+                # ✅ APPLY FILTER (THIS IS THE FIX)
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
+
+    # ✅ remove duplicates
     results = list(dict.fromkeys(results))
 
-    # ✅ DISPLAY RESULTS
+    # ✅ display
     if results:
         for sec in results:
             st.text(sec)
@@ -74,11 +81,9 @@ if query:
             download_text += sec + "\n\n"
 
         st.download_button(
-            label="⬇️ Download Test Scenarios",
-            data=download_text,
-            file_name="qa_test_scenarios.txt",
-            mime="text/plain"
+            "⬇️ Download Test Scenarios",
+            download_text,
+            "qa_test_scenarios.txt"
         )
-
     else:
-        st.write("No match found. Try: login, password reset, security, search, or type 'all'")
+        st.write("No match found. Try: login positive, password reset negative, etc.")
