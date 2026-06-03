@@ -1,57 +1,42 @@
 import streamlit as st
 
-# Read data
+# load file
 with open("qa_data.txt", "r") as f:
-    lines = f.readlines()
+    content = f.read()
 
-# Build sections
-sections = []
-current_section = ""
-section_data = []
+sections = content.split("\n\n")
 
-for line in lines:
-    clean_line = line.strip()
-
-    if clean_line.isupper():
-        if current_section and section_data:
-            sections.append((current_section, section_data))
-        current_section = clean_line
-        section_data = []
-    else:
-        if clean_line != "":
-            section_data.append(clean_line)
-
-if current_section and section_data:
-    sections.append((current_section, section_data))
-
-# UI
 st.title("QA Assistant Chatbot 🤖")
 
 query = st.text_input("Ask a QA question:")
 
 if query:
     query = query.lower()
+
     st.write("### Suggested Test Scenarios")
 
     results = []
+    download_text = ""
 
-    # ✅ SMART match (not strict)
-    for title, data in sections:
-        if query in title.lower() or any(word in title.lower() for word in query.split()):
-            results.append((title, data))
+    for section in sections:
+        lines = section.strip().split("\n")
+        title = lines[0].lower()   # ✅ ONLY CHECK TITLE
 
-    # ✅ SHOW ALL
-    if "all" in query:
-        results = sections
+        # ✅ match ONLY section title
+        if any(word in title for word in query.split()) or "all" in query:
+            results.append(section)
 
-    # ✅ DISPLAY
     if results:
-        for title, data in results:
-            st.write(f"## {title}")
-
-            for i, item in enumerate(data, start=1):
-                st.write(f"{i}. {item}")   # ✅ numbered steps
-
+        for sec in results:
+            st.text(sec)
             st.write("---")
+            download_text += sec + "\n\n"
+
+        st.download_button(
+            "⬇️ Download Test Scenarios",
+            download_text,
+            "qa_test_scenarios.txt"
+        )
+
     else:
-        st.write("No match found. Try: login, registration, api, or type 'all'")
+        st.write("No match found. Try: login, search, upload or type 'all'")
