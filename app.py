@@ -5,8 +5,8 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# Split sections
-sections = re.split(r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING)", content)
+# Split sections by === blocks (THIS IS THE KEY FIX)
+sections = re.split(r"\n=== ", content)
 
 st.title("QA Assistant Chatbot 🤖")
 
@@ -19,31 +19,6 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ Keyword mapping (FIXED SECURITY HERE)
-    keyword_map = {
-        "login": ["login"],
-        "logout": ["logout"],
-        "registration": ["registration"],
-        "search": ["search"],
-        "upload": ["upload"],
-        "download": ["download"],
-        "password": ["password reset"],
-        "reset": ["password reset"],
-
-        # ✅ SECURITY MAPPING (IMPORTANT FIX)
-        "security": ["sql", "xss", "session", "authentication", "authorization"],
-        "sql": ["sql injection"],
-        "xss": ["xss", "cross-site scripting"],
-        "session": ["session"],
-
-        "api": ["api"],
-        "performance": ["performance"],
-        "database": ["database"],
-        "accessibility": ["accessibility"],
-        "regression": ["regression"],
-        "ui": ["ui"]
-    }
-
     # ✅ detect filter
     filter_type = None
     if "positive" in query:
@@ -53,43 +28,31 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ detect module
-    matched_group = None
-    for key, keywords in keyword_map.items():
-        if any(word in query for word in keywords):
-            matched_group = key
-            break
-
     for section in sections:
-        title = section.strip().split("\n")[0].lower()
+        section_text = section.lower()
 
-        # ✅ show all
-        if "all" in query:
-            results.append(section)
-            continue
+        # ✅ MATCH ANYWORD INSIDE FULL SECTION (THIS FIXES SECURITY)
+        if any(word in section_text for word in query.split()) or "all" in query:
 
-        # ✅ SECURITY FIX (SPECIAL HANDLING)
-        if matched_group == "security":
-            if any(word in title for word in ["sql", "xss", "session", "authentication", "authorization"]):
-                if filter_type:
-                    if filter_type in title:
-                        results.append(section)
-                else:
-                    results.append(section)
+            # ✅ APPLY FILTER (positive/negative/edge)
+            if filter_type:
+                lines = section.split("\n")
+                filtered_lines = []
 
-        # ✅ normal modules
-        elif matched_group:
-            if any(word in title for word in keyword_map[matched_group]):
-                if filter_type:
-                    if filter_type in title:
-                        results.append(section)
-                else:
-                    results.append(section)
+                keep = False
+                for line in lines:
+                    if filter_type in line.lower():
+                        keep = True
 
-    # remove duplicates
-    results = list(dict.fromkeys(results))
+                    if keep:
+                        filtered_lines.append(line)
 
-    # display
+                if filtered_lines:
+                    results.append("\n".join(filtered_lines))
+            else:
+                results.append(section)
+
+    # ✅ DISPLAY
     if results:
         for sec in results:
             st.text(sec)
@@ -102,4 +65,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: security, login, password reset, or type 'all'")
+        st.write("No match found. Try: security, login, password reset, etc.")
