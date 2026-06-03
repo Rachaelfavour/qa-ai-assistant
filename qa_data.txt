@@ -1,4 +1,4 @@
-=== AUTHENTICATION MODULE ===
+AUTHENTICATION MODULE
 
 LOGIN - POSITIVE SCENARIOS
 - Verify user can login with valid username and password
@@ -28,7 +28,7 @@ LOGIN - E2E FLOW
 - Verify session is maintained
 
 
-=== LOGOUT SCENARIOS ===
+LOGOUT SCENARIOS
 
 LOGOUT - POSITIVE SCENARIOS
 - Verify user can successfully log out using logout button
@@ -54,7 +54,7 @@ LOGOUT - EDGE CASES
 - Click logout multiple times and verify no system error
 
 
-=== PASSWORD RESET SCENARIOS ===
+PASSWORD RESET SCENARIOS 
 
 PASSWORD RESET - POSITIVE SCENARIOS
 - Verify user can request password reset using a valid registered email
@@ -100,7 +100,7 @@ PASSWORD RESET - E2E SCENARIOS
 - Login with new password successfully
 
 
-=== REGISTRATION SCENARIOS ===
+REGISTRATION SCENARIOS
 
 REGISTRATION - POSITIVE
 - Verify successful user registration with valid data
@@ -220,7 +220,7 @@ SEARCH - E2E SCENARIO
 - Perform subsequent action (e.g., view details or proceed)
 
 
-=== VEHICLE MODULE ===
+VEHICLE MODULE
 
 VEHICLE SEARCH
 - Verify valid search results
@@ -238,7 +238,7 @@ RELATED VEHICLE
 - Verify navigation works correctly
 
 
-=== ORDER MODULE ===
+ORDER MODULE
 
 QUOTE SUMMARY
 - Verify correct price calculation
@@ -270,7 +270,7 @@ EDGE CASES
 - Verify network failure handling
 
 
-=== API TESTING ===
+API TESTING
 
 API POSITIVE
 - Verify valid API request response
@@ -289,7 +289,7 @@ API PERFORMANCE
 - Verify rate limiting
 
 
-=== UI / FRONTEND ===
+UI / FRONTEND
 
 UI FUNCTIONAL - POSITIVE
 - Verify all buttons trigger correct actions
@@ -349,7 +349,7 @@ UI NON-FUNCTIONAL - E2E SCENARIO
 - Verify UI remains responsive and stable throughout
 
 
-=== SECURITY TESTING ===
+SECURITY TESTING
 
 SQL INJECTION
 
@@ -399,6 +399,7 @@ XSS - EDGE CASES
 - Attempt script injection in multiple fields simultaneously and verify system stability
 - Attempt script injection through file uploads and verify it is blocked
 - Verify system does not crash when handling unexpected script inputs
+
 
 SESSION HIJACKING PROTECTION
 
@@ -495,7 +496,7 @@ SECURITY TESTING - E2E SCENARIO
 - Logout and verify session termination
 
 
-=== PERFORMANCE TESTING ===
+PERFORMANCE TESTING
 
 PERFORMANCE TESTING - POSITIVE
 - Verify system handles expected user load without degradation
@@ -524,7 +525,7 @@ PERFORMANCE TESTING - E2E SCENARIO
 - Measure response time across workflows
 - Validate system stability and throughput under load
 
-=== DATABASE TESTING ===
+ATABASE TESTING
 
 DATABASE TESTING - POSITIVE
 - Verify data is saved correctly after valid transactions
@@ -577,7 +578,7 @@ DATABASE TESTING - E2E SCENARIO
 - Simulate failure and verify rollback
 - Verify data consistency after complete flow
 
-=== ACCESSIBILITY ===
+ACCESSIBILITY
 
 ACCESSIBILITY - POSITIVE
 - Verify full keyboard navigation is supported across all pages
@@ -607,7 +608,7 @@ ACCESSIBILITY - E2E SCENARIO
 - Perform actions without mouse
 - Verify accessibility compliance throughout the journey
 
-=== REGRESSION TESTING ===
+REGRESSION TESTING
 
 REGRESSION TESTING - POSITIVE
 - Verify existing functionalities work after new feature implementation
