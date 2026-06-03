@@ -1,11 +1,11 @@
 import streamlit as st
 import re
 
-# Load QA data
+# Load data
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# Split sections
+# Split into sections
 sections = re.split(r"\n(?=[A-Z ]+ -|===)", content)
 
 st.title("QA Assistant Chatbot 🤖")
@@ -19,7 +19,7 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ Keyword map (intent detection)
+    # ✅ keyword groups (clean + safe)
     keyword_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -28,19 +28,19 @@ if query:
         "upload": ["upload"],
         "download": ["download"],
         "security": ["sql", "xss", "session", "authentication", "authorization", "security"],
-        "xss": ["xss", "cross-site scripting"],
-        "sql": ["sql", "injection"],
+        "xss": ["xss"],
+        "sql": ["sql"],
         "session": ["session"]
     }
 
-    # ✅ detect module
+    # ✅ detect module from full sentence (no restriction)
     matched_group = None
     for key, words in keyword_map.items():
         if any(word in query for word in words):
             matched_group = key
             break
 
-    # ✅ detect filter type
+    # ✅ detect filter
     filter_type = None
     if "positive" in query:
         filter_type = "positive"
@@ -53,22 +53,23 @@ if query:
         lines = section.strip().split("\n")
         title = lines[0].lower()
 
+        # ✅ show all
         if "all" in query:
             results.append(section)
             continue
 
-        # ✅ match module
+        # ✅ module filtering
         if matched_group:
             if any(word in title for word in keyword_map[matched_group]):
 
-                # ✅ apply filter inside section
+                # ✅ apply positive/negative filter if present
                 if filter_type:
                     if filter_type in title:
                         results.append(section)
                 else:
                     results.append(section)
 
-    # ✅ display results
+    # ✅ display
     if results:
         for sec in results:
             st.text(sec)
@@ -81,4 +82,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: 'login positive', 'security negative', or 'all'")
+        st.write("No match found. Try: login, security, search, upload or type 'all'")
