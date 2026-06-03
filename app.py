@@ -1,11 +1,11 @@
 import streamlit as st
 import re
 
-# ✅ Load QA data
+# Load QA data
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ Split into sections (your original working method)
+# Split sections
 sections = re.split(r"\n(?=[A-Z ]+ -|===)", content)
 
 st.title("QA Assistant Chatbot 🤖")
@@ -14,74 +14,71 @@ query = st.text_input("Ask a QA question:")
 
 if query:
     query = query.lower()
-    main_word = query.split()[0]   # ✅ first meaningful keyword
-
     st.write("### Suggested Test Scenarios")
 
     results = []
     download_text = ""
 
+    # ✅ Keyword map (intent detection)
+    keyword_map = {
+        "login": ["login"],
+        "logout": ["logout"],
+        "registration": ["registration"],
+        "search": ["search"],
+        "upload": ["upload"],
+        "download": ["download"],
+        "security": ["sql", "xss", "session", "authentication", "authorization", "security"],
+        "xss": ["xss", "cross-site scripting"],
+        "sql": ["sql", "injection"],
+        "session": ["session"]
+    }
+
+    # ✅ detect module
+    matched_group = None
+    for key, words in keyword_map.items():
+        if any(word in query for word in words):
+            matched_group = key
+            break
+
+    # ✅ detect filter type
+    filter_type = None
+    if "positive" in query:
+        filter_type = "positive"
+    elif "negative" in query:
+        filter_type = "negative"
+    elif "edge" in query:
+        filter_type = "edge"
+
     for section in sections:
         lines = section.strip().split("\n")
         title = lines[0].lower()
 
-        # ✅ STRICT MODULE MATCHING
-
-        # Authentication & core modules
-        if title.startswith("login") and main_word == "login":
+        if "all" in query:
             results.append(section)
+            continue
 
-        elif title.startswith("logout") and main_word == "logout":
-            results.append(section)
+        # ✅ match module
+        if matched_group:
+            if any(word in title for word in keyword_map[matched_group]):
 
-        elif title.startswith("registration") and main_word == "registration":
-            results.append(section)
+                # ✅ apply filter inside section
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
 
-        elif title.startswith("search") and main_word == "search":
-            results.append(section)
-
-        elif title.startswith("upload") and main_word == "upload":
-            results.append(section)
-
-        elif title.startswith("download") and main_word == "download":
-            results.append(section)
-
-        # ✅ ✅ SECURITY GROUP (FIXED PROPERLY)
-        elif main_word == "security":
-            if any(keyword in title for keyword in [
-                "sql injection",
-                "cross-site scripting",
-                "xss",
-                "session",
-                "authentication",
-                "authorization",
-                "data security",
-                "api security",
-                "security testing"
-            ]):
-                results.append(section)
-
-        # ✅ allow direct keyword access too
-        elif main_word in ["xss", "sql", "session", "auth"]:
-            if any(main_word in title for keyword in [title]):
-                results.append(section)
-
-        # ✅ SHOW ALL
-        elif main_word == "all":
-            results.append(section)
-
-    # ✅ DISPLAY RESULTS
+    # ✅ display results
     if results:
         for sec in results:
             st.text(sec)
             st.write("---")
             download_text += sec + "\n\n"
 
-        # ✅ DOWNLOAD BUTTON
         st.download_button(
-            label="⬇️ Download Test Scenarios",
-            data=download_text,
-            file_name="qa_test_scenarios.txt"
+            "⬇️ Download Test Scenarios",
+            download_text,
+            "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: login, security, search, upload or type 'all'")
+        st.write("No match found. Try: 'login positive', 'security negative', or 'all'")
