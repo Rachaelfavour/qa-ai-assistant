@@ -1,10 +1,12 @@
 import streamlit as st
+import re
 
-# load file
+# Load file
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-sections = content.split("\n\n")
+# ✅ Split into logical sections using headings
+sections = re.split(r"\n(?=[A-Z ]+ -)", content)
 
 st.title("QA Assistant Chatbot 🤖")
 
@@ -12,7 +14,6 @@ query = st.text_input("Ask a QA question:")
 
 if query:
     query = query.lower()
-
     st.write("### Suggested Test Scenarios")
 
     results = []
@@ -20,10 +21,22 @@ if query:
 
     for section in sections:
         lines = section.strip().split("\n")
-        title = lines[0].lower()   # ✅ ONLY CHECK TITLE
+        title = lines[0].lower()
 
-        # ✅ match ONLY section title
-        if any(word in title for word in query.split()) or "all" in query:
+        # ✅ STRICT match on MAIN keyword (login only matches LOGIN sections)
+        if title.startswith("login") and "login" in query:
+            results.append(section)
+        elif title.startswith("logout") and "logout" in query:
+            results.append(section)
+        elif title.startswith("registration") and "registration" in query:
+            results.append(section)
+        elif title.startswith("search") and "search" in query:
+            results.append(section)
+        elif title.startswith("upload") and "upload" in query:
+            results.append(section)
+        elif title.startswith("download") and "download" in query:
+            results.append(section)
+        elif "all" in query:
             results.append(section)
 
     if results:
@@ -37,6 +50,5 @@ if query:
             download_text,
             "qa_test_scenarios.txt"
         )
-
     else:
-        st.write("No match found. Try: login, search, upload or type 'all'")
+        st.write("No match found. Try: login, logout, registration, search or type 'all'")
