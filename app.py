@@ -4,7 +4,6 @@ import streamlit as st
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ Split by sections
 sections = content.strip().split("\n\n")
 
 st.title("QA Assistant Chatbot 🤖")
@@ -12,7 +11,9 @@ st.title("QA Assistant Chatbot 🤖")
 query = st.text_input("Ask a QA question:")
 
 if query:
-    query = query.lower().split()   # split words
+    query_words = query.lower().split()
+    main_topic = query_words[0]  # ✅ ONLY FIRST WORD (STRICT)
+
     st.write("### Suggested Test Scenarios")
 
     results = []
@@ -22,11 +23,10 @@ if query:
         lines = section.strip().split("\n")
         title = lines[0].lower()
 
-        # ✅ STRICT matching: only match TITLE
-        if any(word in title for word in query) or "all" in query:
+        # ✅ STRICT MATCH: ONLY based on main keyword
+        if main_topic in title or main_topic == "all":
             results.append(section)
 
-    # ✅ DISPLAY
     if results:
         for sec in results:
             st.text(sec)
@@ -39,4 +39,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: login, logout, search, security or type 'all'")
+        st.write("No match found. Try: login, logout, security, search or type 'all'")
