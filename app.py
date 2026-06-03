@@ -5,8 +5,11 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ Split into sections properly
-sections = re.split(r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING)", content)
+# Split sections correctly
+sections = re.split(
+    r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
+    content
+)
 
 st.title("QA Assistant Chatbot 🤖")
 
@@ -19,7 +22,7 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ detect filter
+    # ✅ filter type
     filter_type = None
     if "positive" in query:
         filter_type = "positive"
@@ -28,72 +31,65 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ detect module (MAIN KEYWORDS)
-    if "login" in query:
-        module = "login"
-    elif "logout" in query:
-        module = "logout"
-    elif "password" in query or "reset" in query:
-        module = "password reset"
-    elif "registration" in query:
-        module = "registration"
-    elif "upload" in query:
-        module = "upload"
-    elif "download" in query:
-        module = "download"
-    elif "search" in query:
-        module = "search"
-    elif "security" in query:
-        module = "security"
-    elif "xss" in query:
-        module = "xss"
-    elif "sql" in query:
-        module = "sql"
-    elif "session" in query:
-        module = "session"
-    elif "all" in query:
-        module = "all"
-    else:
-        module = None
+    # ✅ FULL MODULE MAP (ALL 16 COVERED ✅)
+    module_map = {
+        "login": ["login"],
+        "logout": ["logout"],
+        "password reset": ["password"],
+        "registration": ["registration"],
+
+        "vehicle": ["vehicle"],
+        "order": ["order"],
+        "checkout": ["checkout", "payment"],
+        "api": ["api"],
+
+        "ui": ["ui", "frontend"],
+        "ui non-functional": ["non-functional"],
+        
+        "accessibility": ["accessibility"],
+        "regression": ["regression"],
+        "performance": ["performance"],
+        "database": ["database"],
+
+        "security": ["security"],
+        "data security": ["data security"],
+        "api security": ["api security"],
+        "session": ["session"],
+        "authentication": ["authentication", "authorization"]
+    }
+
+    matched_module = None
+
+    for key, words in module_map.items():
+        if any(word in query for word in words):
+            matched_module = key
+            break
 
     for section in sections:
         title = section.strip().split("\n")[0].lower()
 
         # ✅ show all
-        if module == "all":
+        if "all" in query:
             results.append(section)
             continue
 
-        # ✅ SECURITY FIX (STRICT)
-        if module == "security":
-            if any(word in title for word in ["sql injection", "xss", "session", "authentication", "authorization"]):
-                if filter_type:
-                    if filter_type in title:
+        if matched_module:
+            # ✅ special handling for SECURITY (group)
+            if matched_module == "security":
+                if any(sec in title for sec in ["sql", "xss", "session", "security"]):
+                    if filter_type:
+                        if filter_type in title:
+                            results.append(section)
+                    else:
                         results.append(section)
-                else:
-                    results.append(section)
 
-        # ✅ INDIVIDUAL SECURITY TYPES
-        elif module == "xss":
-            if "xss" in title:
-                results.append(section)
-
-        elif module == "sql":
-            if "sql injection" in title:
-                results.append(section)
-
-        elif module == "session":
-            if "session" in title:
-                results.append(section)
-
-        # ✅ NORMAL MODULES
-        elif module:
-            if module in title:
-                if filter_type:
-                    if filter_type in title:
+            else:
+                if any(word in title for word in module_map[matched_module]):
+                    if filter_type:
+                        if filter_type in title:
+                            results.append(section)
+                    else:
                         results.append(section)
-                else:
-                    results.append(section)
 
     # ✅ remove duplicates
     results = list(dict.fromkeys(results))
@@ -111,4 +107,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: login, password reset, security, etc.")
+        st.write("No match found. Try: accessibility, api, database, regression, etc.")
