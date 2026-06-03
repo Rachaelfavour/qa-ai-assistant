@@ -137,6 +137,45 @@ DOWNLOAD DOCUMENT - E2E SCENARIO
 - Verify content integrity
 - Re-login and verify document download works
 
+SEARCH - POSITIVE SCENARIOS
+- Verify search returns correct results for valid keyword
+- Verify search works with full match keywords
+- Verify search works with partial keyword input
+- Verify relevant results are displayed based on entered input
+- Verify search results are displayed within acceptable response time
+
+SEARCH - NEGATIVE SCENARIOS
+- Verify no results message is shown for invalid keyword
+- Verify system handles empty search input appropriately
+- Verify special characters do not break search functionality
+- Verify incorrect or random input does not crash the system
+- Verify search handles unsupported characters gracefully
+
+SEARCH - EDGE CASES (POSITIVE)
+- Verify search works with minimum input length (e.g., 1 character if allowed)
+- Verify search works with maximum input length
+- Verify search handles mixed case input (case insensitivity)
+- Verify search performs correctly with large data set
+
+SEARCH - EDGE CASES (NEGATIVE)
+- Enter extremely long keyword beyond limit and verify system response
+- Enter only spaces and verify no unintended results are returned
+- Enter repeated special characters and verify system stability
+- Perform rapid repeated search requests and verify no performance degradation
+
+SEARCH - PERFORMANCE
+- Verify response time under normal load
+- Verify search performance under heavy load
+- Verify concurrent user search handling
+
+SEARCH - E2E SCENARIO
+- Login to system
+- Navigate to search page
+- Enter valid keyword
+- Verify results displayed correctly
+- Select a result item
+- Perform subsequent action (e.g., view details or proceed)
+
 
 === VEHICLE MODULE ===
 
@@ -210,19 +249,61 @@ API PERFORMANCE
 === UI / FRONTEND ===
 
 UI FUNCTIONAL - POSITIVE
-- Verify buttons perform correct actions
-- Verify input fields accept valid data
-- Verify navigation links redirect correctly
+- Verify all buttons trigger correct actions
+- Verify forms accept valid inputs correctly
+- Verify navigation links redirect to correct pages
+- Verify dropdowns display correct options
+- Verify user interactions (click, hover, input) behave as expected
 
 UI FUNCTIONAL - NEGATIVE
-- Verify disabled buttons when inputs invalid
-- Verify error messages for invalid input
-- Verify broken links handling
+- Verify buttons are disabled when required fields are empty
+- Verify invalid inputs trigger appropriate error messages
+- Verify broken links display proper error or fallback page
+- Verify incorrect user actions do not crash the UI
+- Verify form submission fails when mandatory fields are missing
 
-UI NON-FUNCTIONAL
-- Verify responsive design
-- Verify cross-browser compatibility
-- Verify page load performance
+UI FUNCTIONAL - EDGE CASES (POSITIVE)
+- Verify UI handles maximum allowed input values correctly
+- Verify UI behaves correctly under fast repeated interactions
+- Verify UI works consistently across different screen sizes
+
+UI FUNCTIONAL - EDGE CASES (NEGATIVE)
+- Enter extremely long input values and verify UI handling
+- Perform rapid repeated clicks and verify no duplication or error
+- Try unexpected user actions (double submit, refresh page mid-action)
+
+UI NON-FUNCTIONAL - POSITIVE
+- Verify responsive design works across mobile, tablet, and desktop
+- Verify UI renders correctly across different browsers (Chrome, Edge, Safari)
+- Verify page load time is within acceptable limits
+- Verify UI animations and transitions work smoothly
+
+UI NON-FUNCTIONAL - NEGATIVE
+- Verify layout does not break on unsupported screen resolutions
+- Verify UI handles slow network conditions gracefully
+- Verify UI does not freeze under heavy usage
+- Verify missing assets (images/styles) are handled without crashing UI
+
+UI NON-FUNCTIONAL - EDGE CASES (POSITIVE)
+- Verify UI handles zoom up to 200% without breaking layout
+- Verify UI maintains alignment on very large screens
+- Verify UI supports accessibility standards (contrast, focus states)
+
+UI NON-FUNCTIONAL - EDGE CASES (NEGATIVE)
+- Disable CSS and verify content is still accessible
+- Test under low bandwidth and verify usability
+- Simulate high latency and verify UI responsiveness
+
+UI NON-FUNCTIONAL - PERFORMANCE
+- Verify UI rendering speed under normal load
+- Verify UI handles concurrent user interactions smoothly
+- Measure time to first meaningful paint / load
+
+UI NON-FUNCTIONAL - E2E SCENARIO
+- Login to system
+- Navigate through multiple pages
+- Perform actions (search, upload, checkout)
+- Verify UI remains responsive and stable throughout
 
 
 === SECURITY TESTING ===
@@ -243,34 +324,265 @@ NEGATIVE
 - Authentication bypass attempts
 
 
+=== SECURITY TESTING ===
+
+SQL INJECTION
+
+SQL INJECTION - POSITIVE
+- Verify system accepts valid input without triggering security alerts
+- Verify database queries execute correctly with safe input
+
+SQL INJECTION - NEGATIVE
+- Attempt SQL injection using input fields (e.g., ' OR '1'='1) and verify it is blocked
+- Verify application uses parameterized queries to prevent injection
+- Verify system does not expose database errors or sensitive information
+
+SQL INJECTION - EDGE CASES
+- Inject complex SQL statements and verify system handles securely
+- Attempt SQL injection across multiple input fields simultaneously
+- Verify system logs and detects suspicious activities
+
+
+CROSS-SITE SCRIPTING (XSS)
+
+XSS - POSITIVE
+- Verify normal user input is processed and displayed correctly
+- Verify allowed HTML formatting works where applicable
+
+XSS - NEGATIVE
+- Attempt script injection (e.g., <script>alert()</script>) and verify it is blocked
+- Verify input fields sanitize user input properly
+- Verify output encoding prevents script execution
+
+XSS - EDGE CASES
+- Inject scripts through URL parameters
+- Inject scripts through file upload or form submission
+- Verify system stability when multiple malicious inputs are attempted
+
+
+AUTHENTICATION & AUTHORIZATION
+
+POSITIVE
+- Verify only valid users can access system features
+- Verify correct role-based access control works (admin vs user)
+
+NEGATIVE
+- Attempt access without login and verify access is denied
+- Attempt access to restricted pages with low privilege user
+- Attempt to bypass authentication and verify prevention
+
+EDGE CASES
+- Try session reuse after logout and verify access denied
+- Attempt access with expired session token
+- Attempt simultaneous session usage and verify behavior
+
+
+SESSION MANAGEMENT
+
+POSITIVE
+- Verify session starts after login
+- Verify session persists during active usage
+
+NEGATIVE
+- Verify session expires after inactivity timeout
+- Verify session is invalid after logout
+
+EDGE CASES
+- Simulate session hijacking attempt and verify protection
+- Verify session invalidation across all tabs and devices
+- Test behavior during network interruption
+
+
+DATA SECURITY
+
+POSITIVE
+- Verify sensitive data is encrypted (passwords, personal data)
+- Verify secure communication (HTTPS) is enforced
+
+NEGATIVE
+- Attempt to access sensitive data without authorization
+- Verify no sensitive data is exposed in logs or UI
+
+EDGE CASES
+- Verify handling of large sensitive datasets
+- Verify system behavior during encryption/decryption failures
+
+
+API SECURITY
+
+POSITIVE
+- Verify API calls work with valid authentication tokens
+- Verify secure endpoints return correct responses
+
+NEGATIVE
+- Verify unauthorized API calls return 401
+- Verify forbidden requests return 403
+- Attempt token manipulation and verify rejection
+
+EDGE CASES
+- Test expired tokens and verify refresh or rejection
+- Simulate brute force attempts on API endpoints
+- Verify rate limiting prevents abuse
+
+
+SECURITY TESTING - E2E SCENARIO
+- Login to system
+- Attempt unauthorized access to restricted page
+- Perform valid action within role permissions
+- Attempt malicious input (SQL/XSS)
+- Verify system blocks and logs activity
+- Logout and verify session termination
+
+
 === PERFORMANCE TESTING ===
 
-- Verify system under normal load
-- Verify stress conditions handling
-- Verify response time under load
-- Verify concurrent users handling
+PERFORMANCE TESTING - POSITIVE
+- Verify system handles expected user load without degradation
+- Verify response time remains within acceptable limits under normal conditions
+- Verify application performs efficiently with standard data volume
+- Verify system maintains stability during moderate concurrent usage
 
+PERFORMANCE TESTING - NEGATIVE
+- Verify system behavior under excessive load beyond capacity
+- Verify system degrades gracefully under stress conditions
+- Verify response timeout errors are handled properly
+- Verify system does not crash under extreme load
+
+PERFORMANCE TESTING - EDGE CASES (POSITIVE)
+- Verify system handles peak traffic conditions correctly
+- Verify system scales properly with increased user load
+- Verify performance remains consistent over long usage periods
+
+PERFORMANCE TESTING - EDGE CASES (NEGATIVE)
+- Simulate sudden spike in users and verify system response
+- Simulate resource exhaustion (CPU/memory) and verify system handling
+- Perform rapid repeated requests and verify no system instability
+
+PERFORMANCE TESTING - E2E SCENARIO
+- Simulate multiple users performing login, search, and checkout simultaneously
+- Measure response time across workflows
+- Validate system stability and throughput under load
 
 === DATABASE TESTING ===
 
 DATABASE TESTING - POSITIVE
-- Verify data saved correctly
-- Verify data retrieval is accurate
+- Verify data is saved correctly after valid transactions
+- Verify data retrieval returns accurate and consistent results
+- Verify updates are correctly reflected in the database
+- Verify database integrity is maintained after operations
 
 DATABASE TESTING - NEGATIVE
-- Verify invalid data is rejected
-- Verify duplicate records prevented
-- Verify rollback on failure
+- Verify invalid data is not stored in the database
+- Verify database rejects duplicate records where constraints exist
+- Verify incorrect queries or operations do not corrupt data
+- Verify rollback occurs when transaction fails
 
-DATABASE TESTING - EDGE CASES
-- Verify concurrent update handling
-- Verify large data volume handling
-- Verify consistency during failures
+DATABASE TESTING - EDGE CASES (POSITIVE)
+- Verify database handles large volumes of data efficiently
+- Verify system supports boundary data values correctly
+- Verify database performs correctly with maximum allowed records
 
+DATABASE TESTING - EDGE CASES (NEGATIVE)
+- Insert extremely large data and verify system handles or rejects it correctly
+- Simulate concurrent updates and verify no data inconsistency occurs
+- Force transaction failure and verify no partial data is committed
+- Test behavior when database connection is interrupted
+
+DATABASE TESTING - DATA INTEGRITY
+- Verify referential integrity constraints are enforced
+- Verify foreign key relationships maintain consistency
+- Verify no orphan records are created
+
+DATABASE TESTING - PERFORMANCE
+- Verify query response time under normal load
+- Verify database performance under heavy load
+- Verify indexing improves query efficiency
+
+DATABASE TESTING - SECURITY
+- Verify sensitive data is encrypted in database
+- Verify unauthorized users cannot access database records
+- Verify database access is restricted by roles/permissions
+
+DATABASE TESTING - BACKUP & RECOVERY
+- Verify database backup is created successfully
+- Verify data can be restored from backup correctly
+- Verify recovery process maintains data consistency
+
+DATABASE TESTING - E2E SCENARIO
+- Perform user operation (e.g., registration or order placement)
+- Verify data stored correctly in database
+- Retrieve and validate stored data
+- Update data and verify changes
+- Simulate failure and verify rollback
+- Verify data consistency after complete flow
 
 === ACCESSIBILITY ===
 
-- Verify keyboard navigation works
-- Verify screen reader compatibility
-- Verify color contrast compliance
-- Verify focus indicators visible
+ACCESSIBILITY - POSITIVE
+- Verify full keyboard navigation is supported across all pages
+- Verify screen reader compatibility for all UI elements
+- Verify sufficient color contrast for readability
+- Verify focus indicators are visible on all interactive elements
+
+ACCESSIBILITY - NEGATIVE
+- Verify missing alt text for images is detected and flagged
+- Verify insufficient color contrast is identified correctly
+- Verify inaccessible elements (buttons/links) are handled properly
+- Verify incorrect semantic HTML usage impacts accessibility feedback
+
+ACCESSIBILITY - EDGE CASES (POSITIVE)
+- Verify system works with different assistive technologies (screen readers)
+- Verify zoom levels up to 200% maintain usability
+- Verify accessibility works across different browsers and devices
+
+ACCESSIBILITY - EDGE CASES (NEGATIVE)
+- Disable CSS and verify content is still readable
+- Navigate using only keyboard and verify no functionality is blocked
+- Test with screen reader interruptions and verify system consistency
+
+ACCESSIBILITY - E2E SCENARIO
+- Login using keyboard navigation only
+- Navigate through key features (search, upload, checkout)
+- Perform actions without mouse
+- Verify accessibility compliance throughout the journey
+
+=== REGRESSION TESTING ===
+
+REGRESSION TESTING - POSITIVE
+- Verify existing functionalities work after new feature implementation
+- Verify previously fixed bugs do not reappear
+- Verify core application flows (login, search, checkout) still work
+- Verify system behaves correctly after code changes or upgrades
+
+REGRESSION TESTING - NEGATIVE
+- Verify new changes do not break existing features
+- Verify previously working functionalities do not fail after deployment
+- Verify old defects are not reintroduced
+- Verify system handles failures gracefully after updates
+
+REGRESSION TESTING - EDGE CASES (POSITIVE)
+- Verify regression tests pass across different environments (dev, QA, prod)
+- Verify regression suite works after dependency/library upgrades
+- Verify backward compatibility is maintained
+
+REGRESSION TESTING - EDGE CASES (NEGATIVE)
+- Deploy new feature and verify unrelated modules are not impacted
+- Test simultaneous changes in multiple modules and verify system stability
+- Verify system handles incomplete or failed deployment scenarios
+
+REGRESSION TESTING - AUTOMATION
+- Verify automated regression test suite executes successfully
+- Verify regression scripts cover all critical business flows
+- Verify automation results match expected outcomes
+- Verify failed test cases are logged and reported correctly
+
+REGRESSION TESTING - SMOKE CHECK
+- Verify application launches successfully after deployment
+- Verify basic functionalities (login, homepage, navigation) are working
+- Verify critical paths are accessible
+
+REGRESSION TESTING - E2E SCENARIO
+- Execute full user journey (login → search → order → payment)
+- Validate all key features after system update
+- Verify integration between modules remains intact
+- Ensure no disruption in complete workflow
