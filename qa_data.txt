@@ -28,6 +28,8 @@ LOGIN - E2E FLOW
 - Verify session is maintained
 
 
+=== LOGOUT SCENARIOS ===
+
 LOGOUT - POSITIVE SCENARIOS
 - Verify user can successfully log out using logout button
 - Verify user is redirected to login page after logout
@@ -52,12 +54,53 @@ LOGOUT - EDGE CASES
 - Click logout multiple times and verify no system error
 
 
-PASSWORD RESET
-- Verify password reset using valid email
-- Verify expired reset link is rejected
-- Verify error message for invalid email
-- Verify multiple reset requests handled correctly
+=== PASSWORD RESET SCENARIOS ===
 
+PASSWORD RESET - POSITIVE SCENARIOS
+- Verify user can request password reset using a valid registered email
+- Verify reset link is sent successfully to the user’s email
+- Verify user can reset password using a valid, active reset link
+- Verify user is able to login with the newly updated password
+- Verify system confirms successful password reset via message
+
+PASSWORD RESET - NEGATIVE SCENARIOS
+- Verify error message for unregistered email address
+- Verify invalid email format is rejected
+- Verify expired reset link cannot be used
+- Verify reset link cannot be reused after successful reset
+- Verify weak password (below policy) is rejected
+- Verify password mismatch (new password vs confirm password) shows error
+- Verify user cannot reset password when required fields are empty
+
+PASSWORD RESET - EDGE CASES (POSITIVE)
+- Verify reset link works correctly within valid time duration
+- Verify password reset works across different browsers and devices
+- Verify system handles multiple reset requests correctly
+
+PASSWORD RESET - EDGE CASES (NEGATIVE)
+- Submit multiple reset requests rapidly and verify system handles it safely
+- Use reset link after multiple attempts and verify correct behavior
+- Interrupt network during password reset and verify system stability
+- Attempt password reset using previously used password (if restricted)
+
+PASSWORD RESET - SECURITY SCENARIOS
+- Verify reset link is uniquely generated per request
+- Verify reset token is invalid after password is changed
+- Verify reset requests are protected against brute force attempts
+- Verify sensitive data is not exposed during the reset process
+
+PASSWORD RESET - E2E SCENARIOS
+- Navigate to forgot password page
+- Enter registered email address
+- Receive reset link via email
+- Click reset link
+- Enter new password and confirm password
+- Submit the form
+- Verify success message is displayed
+- Login with new password successfully
+
+
+=== REGISTRATION SCENARIOS ===
 
 REGISTRATION - POSITIVE
 - Verify successful user registration with valid data
