@@ -1,156 +1,276 @@
-LOGIN
-- Valid login with correct credentials
-- Invalid password
-- Invalid username
-- Account lock after multiple failed attempts
-- Empty username/password fields
-- Session timeout after login
-- Remember me functionality
+=== AUTHENTICATION MODULE ===
 
-LOGOUT
-- Successful logout
-- Logout from multiple sessions
-- Session timeout logout
-- Logout via browser close
-- Logout while transaction in progress
+LOGIN - POSITIVE SCENARIOS
+- Verify user can login with valid username and password
+- Verify login works using remembered session
+- Verify login works across different browsers
+
+LOGIN - NEGATIVE SCENARIOS
+- Verify error message for invalid password
+- Verify error message for invalid username
+- Verify validation for empty username/password fields
+- Verify account lock after multiple failed attempts
+
+LOGIN - EDGE CASES (POSITIVE)
+- Verify system handles maximum input length correctly
+- Verify login works with boundary values
+
+LOGIN - EDGE CASES (NEGATIVE)
+- Enter very long username/password beyond limit and verify rejection
+- Enter special characters and verify system stability
+- Attempt SQL injection and verify it is blocked
+
+LOGIN - E2E FLOW
+- Navigate to login page
+- Enter valid credentials
+- Click login
+- Verify dashboard is displayed
+- Verify session is maintained
+
+
+LOGOUT - POSITIVE SCENARIOS
+- Verify user can successfully log out using logout button
+- Verify user is redirected to login page after logout
+- Verify session is terminated after logout
+
+LOGOUT - NEGATIVE SCENARIOS
+- Attempt to access protected pages after logout and verify access is denied
+- Attempt API request after logout and verify unauthorized response (401)
+
+LOGOUT - SESSION MANAGEMENT
+- Verify session expires after inactivity timeout
+- Verify user is logged out automatically after timeout
+- Verify session is invalidated across all tabs
+
+LOGOUT - MULTI-DEVICE / MULTI-TAB
+- Login on multiple devices and logout from one device – verify other sessions
+- Logout from one tab and verify session behavior on another tab
+
+LOGOUT - EDGE CASES
+- Logout during active transaction and verify system behavior
+- Logout during network interruption and verify consistency
+- Click logout multiple times and verify no system error
+
 
 PASSWORD RESET
-- Valid email reset
-- Invalid email format
-- Expired reset link
-- Reset link reuse
-- Weak password validation
-- Password complexity rules
-- Multiple reset requests handling
+- Verify password reset using valid email
+- Verify expired reset link is rejected
+- Verify error message for invalid email
+- Verify multiple reset requests handled correctly
 
-REGISTRATION
-- Valid registration
-- Invalid email format
-- Duplicate account
-- Password mismatch
-- Mandatory fields validation
-- Terms and conditions checkbox
-- CAPTCHA validation
-- Email verification flow
 
-WELCOME PAGE (NEW DRIVER)
-- First-time login flow
-- Welcome message display
-- Redirection after login
-- Mandatory setup completion
+REGISTRATION - POSITIVE
+- Verify successful user registration with valid data
+- Verify email verification flow completes successfully
 
-HOME PAGE
-- Dashboard loads correctly
-- Navigation links work
-- Data displayed correctly
+REGISTRATION - NEGATIVE
+- Verify error for duplicate account
+- Verify validation for invalid email format
+- Verify password mismatch error
 
-MY PROFILE
-- View profile details
-- Edit profile information
-- Save changes
-- Validation on incorrect data
+REGISTRATION - EDGE CASES (POSITIVE)
+- Verify system handles maximum field input correctly
+
+REGISTRATION - EDGE CASES (NEGATIVE)
+- Enter very long input and verify rejection
+- Enter special characters and verify validation
+- Leave mandatory fields empty and verify error message
+
+
+UPLOAD DOCUMENT - POSITIVE SCENARIOS
+- Verify user can upload valid document successfully
+- Verify uploaded document is displayed correctly
+- Verify multiple documents upload works properly
+
+UPLOAD DOCUMENT - NEGATIVE SCENARIOS
+- Upload unsupported file format and verify error
+- Upload file exceeding size limit and verify validation
+- Upload corrupted file and verify rejection
+
+UPLOAD DOCUMENT - VALIDATION CHECKS
+- Verify file type validation (PDF, JPG, PNG)
+- Verify file size restrictions
+- Verify duplicate upload handling
+
+UPLOAD DOCUMENT - EDGE CASES
+- Upload file with special characters
+- Upload very large file and verify performance
+- Upload empty file and verify rejection
+- Upload during unstable network
+
+UPLOAD DOCUMENT - SECURITY
+- Attempt to upload malicious file and verify blocked
+- Verify unauthorized uploads are prevented
+- Verify file validation/scanning is enforced
+
+UPLOAD DOCUMENT - E2E SCENARIO
+- Login
+- Navigate to upload section
+- Upload document
+- Verify successful save
+- Logout and login again
+- Verify document persists
+
+
+DOWNLOAD DOCUMENT - POSITIVE SCENARIOS
+- Verify user can download document successfully
+- Verify downloaded file matches uploaded content
+- Verify download works across supported browsers
+- Verify multiple downloads work correctly
+
+DOWNLOAD DOCUMENT - NEGATIVE SCENARIOS
+- Attempt unauthorized download and verify access denied
+- Attempt download of non-existing file and verify error
+- Attempt download during failure and verify error handling
+- Attempt download of corrupted file and verify system response
+
+DOWNLOAD DOCUMENT - EDGE CASES
+- Download very large document and verify performance
+- Download document with special characters
+- Download after session timeout and verify access behavior
+- Trigger multiple downloads rapidly and verify stability
+
+DOWNLOAD DOCUMENT - E2E SCENARIO
+- Upload document
+- Save document
+- Download document
+- Verify content integrity
+- Re-login and verify document download works
+
+
+=== VEHICLE MODULE ===
 
 VEHICLE SEARCH
-- Search with valid criteria
-- No results scenario
-- Filter and sorting
-- Partial keyword search
+- Verify valid search results
+- Verify no results scenario
+- Verify filtering and sorting
+- Verify partial keyword search
 
-VEHICLE CONFIGURE
-- Select vehicle options
-- Price updates correctly
-- Invalid configuration handling
+VEHICLE CONFIGURATION
+- Verify option selection works
+- Verify price updates correctly
+- Verify invalid configuration handling
 
 RELATED VEHICLE
-- Suggest similar vehicles
-- Navigation to related vehicle
+- Verify related vehicles displayed
+- Verify navigation works correctly
 
-VEHICLE OPTIONS EXTRA
-- Add/remove extra options
-- Price updates accordingly
+
+=== ORDER MODULE ===
 
 QUOTE SUMMARY
-- Accurate pricing summary
-- All selections displayed
-- Tax/fees calculation
+- Verify correct price calculation
+- Verify tax and fee calculation
 
-SAVED CAR
-- Save vehicle
-- Retrieve saved vehicles
-- Delete saved items
+ORDER JOURNEY - E2E
+- Login
+- Search vehicle
+- Configure vehicle
+- Add to cart
+- Checkout
+- Payment success
+- Order confirmation
 
-QUOTE COMPARISON
-- Compare multiple quotes
-- Display differences clearly
-
-CHANGE OPTION
-- Modify selected options
-- Updated pricing reflected
-
-ORDER JOURNEY
-- Complete order flow
-- Validation at each step
-- Error handling during order
-
-POPULAR / HOT DEALS / STOCK
-- Display popular vehicles
-- Correct pricing and availability
-
-SEARCH
-- Valid search results
-- No results found
-- Partial keyword search
-- Special characters in search
-- Case sensitivity check
-- Performance under load
 
 CHECKOUT / PAYMENT
-- Valid payment
-- Invalid card number
-- Expired card
-- CVV validation
-- Insufficient funds
-- Payment timeout
-- Payment retry
-- Cancel payment midway
-- Duplicate transaction prevention
 
-API TESTING
-- Valid API request
-- Invalid parameters
-- Missing required fields
-- Unauthorized request (401)
-- Forbidden request (403)
-- Server error (500)
-- Response time validation
-- Data validation in response
-- Rate limiting / throttling
+POSITIVE
+- Verify successful payment with valid card
 
-UI / FRONTEND
-- Buttons clickable
-- Input field validation
-- Error messages displayed correctly
-- Responsive design (mobile/tablet)
-- Page load time
-- Broken links
+NEGATIVE
+- Verify error for invalid card number
+- Verify expired card handling
+- Verify insufficient funds error
 
-SECURITY TESTING
-- SQL injection attempts
+EDGE CASES
+- Verify payment timeout behavior
+- Verify duplicate transaction prevention
+- Verify network failure handling
+
+
+=== API TESTING ===
+
+API POSITIVE
+- Verify valid API request response
+- Verify correct response structure
+
+API NEGATIVE
+- Verify invalid parameter handling
+- Verify missing field error
+- Verify unauthorized request (401)
+- Verify forbidden request (403)
+- Verify server error (500)
+
+API PERFORMANCE
+- Verify response time
+- Verify load handling
+- Verify rate limiting
+
+
+=== UI / FRONTEND ===
+
+UI FUNCTIONAL - POSITIVE
+- Verify buttons perform correct actions
+- Verify input fields accept valid data
+- Verify navigation links redirect correctly
+
+UI FUNCTIONAL - NEGATIVE
+- Verify disabled buttons when inputs invalid
+- Verify error messages for invalid input
+- Verify broken links handling
+
+UI NON-FUNCTIONAL
+- Verify responsive design
+- Verify cross-browser compatibility
+- Verify page load performance
+
+
+=== SECURITY TESTING ===
+
+SQL INJECTION
+
+POSITIVE
+- Verify system handles valid inputs securely
+
+NEGATIVE
+- Attempt SQL injection and verify system blocks it
+- Verify queries are parameterized
+- Verify no sensitive data exposed in error messages
+
 - Cross-site scripting (XSS)
-- Authentication checks
-- Authorization checks
+- Session hijacking protection
+- Authorization validation
+- Authentication bypass attempts
 
-DATABASE
-- Data saved correctly
-- Data consistency
-- Duplicate records prevention
 
-PERFORMANCE TESTING
-- Load testing under expected users
-- Stress testing beyond capacity
-- Response time under heavy load
+=== PERFORMANCE TESTING ===
 
-ACCESSIBILITY
-- Keyboard navigation
-- Screen reader compatibility
-- Color contrast validation
+- Verify system under normal load
+- Verify stress conditions handling
+- Verify response time under load
+- Verify concurrent users handling
+
+
+=== DATABASE TESTING ===
+
+DATABASE TESTING - POSITIVE
+- Verify data saved correctly
+- Verify data retrieval is accurate
+
+DATABASE TESTING - NEGATIVE
+- Verify invalid data is rejected
+- Verify duplicate records prevented
+- Verify rollback on failure
+
+DATABASE TESTING - EDGE CASES
+- Verify concurrent update handling
+- Verify large data volume handling
+- Verify consistency during failures
+
+
+=== ACCESSIBILITY ===
+
+- Verify keyboard navigation works
+- Verify screen reader compatibility
+- Verify color contrast compliance
+- Verify focus indicators visible
