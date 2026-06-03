@@ -5,8 +5,8 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# Split sections by === blocks (THIS IS THE KEY FIX)
-sections = re.split(r"\n=== ", content)
+# ✅ Split into sections properly
+sections = re.split(r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING)", content)
 
 st.title("QA Assistant Chatbot 🤖")
 
@@ -28,31 +28,77 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
+    # ✅ detect module (MAIN KEYWORDS)
+    if "login" in query:
+        module = "login"
+    elif "logout" in query:
+        module = "logout"
+    elif "password" in query or "reset" in query:
+        module = "password reset"
+    elif "registration" in query:
+        module = "registration"
+    elif "upload" in query:
+        module = "upload"
+    elif "download" in query:
+        module = "download"
+    elif "search" in query:
+        module = "search"
+    elif "security" in query:
+        module = "security"
+    elif "xss" in query:
+        module = "xss"
+    elif "sql" in query:
+        module = "sql"
+    elif "session" in query:
+        module = "session"
+    elif "all" in query:
+        module = "all"
+    else:
+        module = None
+
     for section in sections:
-        section_text = section.lower()
+        title = section.strip().split("\n")[0].lower()
 
-        # ✅ MATCH ANYWORD INSIDE FULL SECTION (THIS FIXES SECURITY)
-        if any(word in section_text for word in query.split()) or "all" in query:
+        # ✅ show all
+        if module == "all":
+            results.append(section)
+            continue
 
-            # ✅ APPLY FILTER (positive/negative/edge)
-            if filter_type:
-                lines = section.split("\n")
-                filtered_lines = []
+        # ✅ SECURITY FIX (STRICT)
+        if module == "security":
+            if any(word in title for word in ["sql injection", "xss", "session", "authentication", "authorization"]):
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
 
-                keep = False
-                for line in lines:
-                    if filter_type in line.lower():
-                        keep = True
-
-                    if keep:
-                        filtered_lines.append(line)
-
-                if filtered_lines:
-                    results.append("\n".join(filtered_lines))
-            else:
+        # ✅ INDIVIDUAL SECURITY TYPES
+        elif module == "xss":
+            if "xss" in title:
                 results.append(section)
 
-    # ✅ DISPLAY
+        elif module == "sql":
+            if "sql injection" in title:
+                results.append(section)
+
+        elif module == "session":
+            if "session" in title:
+                results.append(section)
+
+        # ✅ NORMAL MODULES
+        elif module:
+            if module in title:
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
+
+    # ✅ remove duplicates
+    results = list(dict.fromkeys(results))
+
+    # ✅ display
     if results:
         for sec in results:
             st.text(sec)
@@ -65,4 +111,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: security, login, password reset, etc.")
+        st.write("No match found. Try: login, password reset, security, etc.")
