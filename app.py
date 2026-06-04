@@ -5,9 +5,9 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# Split sections correctly
+# ✅ FIXED SPLIT (ONLY CHANGE MADE HERE ✅)
 sections = re.split(
-    r"\n(?=[A-Z ]+ -|===|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
+    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION &amp; AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
 )
 
@@ -31,7 +31,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ FULL MODULE MAP (ALL 16 COVERED ✅)
+    # ✅ FULL MODULE MAP (UNCHANGED ✅)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -74,7 +74,7 @@ if query:
             continue
 
         if matched_module:
-            # ✅ special handling for SECURITY (group)
+            # ✅ special handling for SECURITY (UNCHANGED ✅)
             if matched_module == "security":
                 if any(sec in title for sec in ["sql", "xss", "session", "security"]):
                     if filter_type:
