@@ -17,6 +17,8 @@ query = st.text_input("Search or ask a QA question:")
 
 if query:
     query = query.lower()
+    query = query.replace("/", " ").replace("-", " ")   # ✅ FIX UI + checkout cases
+
     st.write("### Suggested Test Scenarios")
 
     results = []
@@ -31,7 +33,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP (✅ FIX: checkout changed)
+    # ✅ MODULE MAP (KEPT SAME STRUCTURE)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -44,11 +46,11 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout", "payment"],   # ✅ FIXED HERE
+        "checkout": ["checkout", "payment"],   # ✅ FIXED
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
-        "ui non-functional": ["non-functional"],
+        "ui non-functional": ["non functional"],
         
         "accessibility": ["accessibility"],
         "regression": ["regression"],
@@ -68,23 +70,24 @@ if query:
         if any(word in query for word in words):
             matched_module = key
 
-    # ✅ PRIORITY MATCHES (UNCHANGED + checkout clarity)
-    if "data security" in query:
-        matched_module = "data security"
-    elif "api security" in query:
+    # ✅ PRIORITY MATCHES (STRICT)
+    if "api security" in query:
         matched_module = "api security"
-    elif "search" in query:
-        matched_module = "search"
+    elif "data security" in query:
+        matched_module = "data security"
+    elif "checkout" in query or "payment" in query:
+        matched_module = "checkout"
     elif "upload" in query:
         matched_module = "upload"
     elif "download" in query:
         matched_module = "download"
-    elif "checkout" in query or "payment" in query:
-        matched_module = "checkout"
+    elif "search" in query:
+        matched_module = "search"
 
     for section in sections:
         section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
+        title = title.replace("/", " ").replace("-", " ")   # ✅ FIX titles
 
         # ✅ SHOW ALL
         if "all" in query:
@@ -93,7 +96,7 @@ if query:
 
         if matched_module:
 
-            # ✅ ✅ CHECKOUT FIX (STRICT MATCH)
+            # ✅ CHECKOUT / PAYMENT FIX
             if matched_module == "checkout":
                 if "checkout" in title or "payment" in title:
                     if filter_type:
@@ -102,22 +105,48 @@ if query:
                     else:
                         results.append(section)
 
-            # ✅ NORMAL MODULE MATCH
+            # ✅ UI FIX
+            elif matched_module == "ui":
+                if "ui" in title or "frontend" in title:
+                    if filter_type:
+                        if filter_type in title:
+                            results.append(section)
+                    else:
+                        results.append(section)
+
+            elif matched_module == "ui non-functional":
+                if "non functional" in title:
+                    if filter_type:
+                        if filter_type in title:
+                            results.append(section)
+                    else:
+                        results.append(section)
+
+            # ✅ API SECURITY STRICT
+            elif matched_module == "api security":
+                if "api security" in section_text:
+                    if filter_type:
+                        if filter_type in section_text:
+                            results.append(section)
+                    else:
+                        results.append(section)
+
+            # ✅ DATA SECURITY STRICT
+            elif matched_module == "data security":
+                if "data security" in section_text:
+                    if filter_type:
+                        if filter_type in section_text:
+                            results.append(section)
+                    else:
+                        results.append(section)
+
+            # ✅ GENERAL MATCH
             elif any(word in title for word in module_map[matched_module]):
                 if filter_type:
                     if filter_type in title:
                         results.append(section)
                 else:
                     results.append(section)
-
-            # ✅ SAFE FALLBACK
-            elif matched_module in ["data security", "api security"]:
-                if matched_module in section_text:
-                    if filter_type:
-                        if filter_type in section_text:
-                            results.append(section)
-                    else:
-                        results.append(section)
 
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
@@ -135,4 +164,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: checkout, payment, login, etc.")
+        st.write("No match found. Try: checkout, ui frontend, api security, etc.")
