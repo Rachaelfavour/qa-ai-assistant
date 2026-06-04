@@ -379,26 +379,26 @@ API PERFORMANCE
 - Verify no memory leaks or performance degradation over repeated callsg
 
 
-UI / FRONTEND - FUNCTIONAL (POSITIVE SCENARIOS)
+UI FRONTEND - FUNCTIONAL (POSITIVE SCENARIOS)
 - Verify all buttons trigger correct actions
 - Verify forms accept valid inputs correctly
 - Verify navigation links redirect to correct pages
 - Verify dropdowns display correct options
 - Verify user interactions (click, hover, input) behave as expected
 
-UI / FRONTEND - FUNCTIONAL (NEGATIVE SCENARIOS) 
+UI FRONTEND - FUNCTIONAL (NEGATIVE SCENARIOS) 
 - Verify buttons are disabled when required fields are empty
 - Verify invalid inputs trigger appropriate error messages
 - Verify broken links display proper error or fallback page
 - Verify incorrect user actions do not crash the UI
 - Verify form submission fails when mandatory fields are missing
 
-UI / FRONTEND - FUNCTIONAL EDGE CASES (POSITIVE SCENARIOS)
+UI FRONTEND - FUNCTIONAL EDGE CASES (POSITIVE SCENARIOS)
 - Verify UI handles maximum allowed input values correctly
 - Verify UI behaves correctly under fast repeated interactions
 - Verify UI works consistently across different screen sizes
 
-UI / FRONTEND - FUNCTIONAL EDGE CASES (NEGATIVE SCENARIOS)
+UI FRONTEND - FUNCTIONAL EDGE CASES (NEGATIVE SCENARIOS)
 - Enter extremely long input values and verify UI handling
 - Perform rapid repeated clicks and verify no duplication or error
 - Try unexpected user actions (double submit, refresh page mid-action)
