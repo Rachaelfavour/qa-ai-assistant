@@ -82,9 +82,7 @@ if query:
         matched_module = "download"
     elif "checkout" in query or "payment" in query:   # ✅ FIXED HERE
         matched_module = "checkout"
-    elif "cross site scripting" in query or "xss" in query:
-        module = "cross site scripting"
-
+    
     for section in sections:
         section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
