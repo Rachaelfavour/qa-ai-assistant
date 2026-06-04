@@ -7,7 +7,7 @@ with open("qa_data.txt", "r") as f:
 
 # ✅ FIXED SPLIT
 sections = re.split(
-    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
+    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION &amp; AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
 )
 
@@ -31,7 +31,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP 
+    # ✅ MODULE MAP
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -44,13 +44,15 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout payment"],  
+        "checkout": ["checkout payment"],
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non-functional"],
-        "cross site scripting or "xss":  ["cross site scripting or "xss"],
-        
+
+        # ✅ FIXED LINE
+        "cross site scripting or xss": ["cross site scripting", "xss"],
+
         "accessibility": ["accessibility"],
         "regression": ["regression"],
         "performance": ["performance"],
@@ -69,7 +71,7 @@ if query:
         if any(word in query for word in words):
             matched_module = key
 
-    # ✅ PRIORITY MATCHES (ONLY ADDED CHECKOUT FIX ✅)
+    # ✅ PRIORITY MATCHES
     if "data security" in query:
         matched_module = "data security"
     elif "api security" in query:
@@ -80,9 +82,9 @@ if query:
         matched_module = "upload"
     elif "download" in query:
         matched_module = "download"
-    elif "checkout" in query or "payment" in query:   # ✅ FIXED HERE
+    elif "checkout" in query or "payment" in query:
         matched_module = "checkout"
-    
+
     for section in sections:
         section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
@@ -103,7 +105,7 @@ if query:
                 else:
                     results.append(section)
 
-            # ✅ SAFE FALLBACK (UNCHANGED)
+            # ✅ SAFE FALLBACK
             elif matched_module in ["data security", "api security"]:
                 if matched_module in section_text:
                     if filter_type:
@@ -128,4 +130,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: checkout, payment, login, etc.")
+        st.write("No match found. Try: checkout, payment,")
