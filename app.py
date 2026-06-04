@@ -31,7 +31,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP (ONLY CHANGE: checkout fixed ✅)
+    # ✅ MODULE MAP (✅ FIX: checkout changed)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -44,7 +44,7 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout / payment"],  # ✅ FIXED HERE
+        "checkout": ["checkout", "payment"],   # ✅ FIXED HERE
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
@@ -68,7 +68,7 @@ if query:
         if any(word in query for word in words):
             matched_module = key
 
-    # ✅ PRIORITY MATCHES (ONLY ADDED CHECKOUT FIX ✅)
+    # ✅ PRIORITY MATCHES (UNCHANGED + checkout clarity)
     if "data security" in query:
         matched_module = "data security"
     elif "api security" in query:
@@ -79,7 +79,7 @@ if query:
         matched_module = "upload"
     elif "download" in query:
         matched_module = "download"
-    elif "checkout" in query or "payment" in query:   # ✅ FIXED HERE
+    elif "checkout" in query or "payment" in query:
         matched_module = "checkout"
 
     for section in sections:
@@ -93,16 +93,24 @@ if query:
 
         if matched_module:
 
-            # ✅ STRICT TITLE MATCH
-            if any(word in title for word in module_map[matched_module]):
+            # ✅ ✅ CHECKOUT FIX (STRICT MATCH)
+            if matched_module == "checkout":
+                if "checkout" in title or "payment" in title:
+                    if filter_type:
+                        if filter_type in title:
+                            results.append(section)
+                    else:
+                        results.append(section)
 
+            # ✅ NORMAL MODULE MATCH
+            elif any(word in title for word in module_map[matched_module]):
                 if filter_type:
                     if filter_type in title:
                         results.append(section)
                 else:
                     results.append(section)
 
-            # ✅ SAFE FALLBACK (UNCHANGED)
+            # ✅ SAFE FALLBACK
             elif matched_module in ["data security", "api security"]:
                 if matched_module in section_text:
                     if filter_type:
