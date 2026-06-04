@@ -5,9 +5,9 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ FIXED SPLIT
+# ✅ SPLIT SECTIONS
 sections = re.split(
-    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION &amp; AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
+    r"\n(?=[A-Z \-]+ -|===|[A-Z \-]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
 )
 
@@ -31,7 +31,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP
+    # ✅ MODULE MAP (FIXED XSS)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -44,14 +44,18 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout payment"],
+        "checkout": ["checkout", "payment"],  
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non-functional"],
 
-        # ✅ FIXED LINE
-        "cross site scripting or xss": ["cross site scripting", "xss"],
+        # ✅ FIXED XSS SUPPORT
+        "cross site scripting": [
+            "cross site scripting",
+            "cross-site scripting",
+            "xss"
+        ],
 
         "accessibility": ["accessibility"],
         "regression": ["regression"],
@@ -67,6 +71,7 @@ if query:
 
     matched_module = None
 
+    # ✅ FIND MATCH
     for key, words in module_map.items():
         if any(word in query for word in words):
             matched_module = key
@@ -85,9 +90,11 @@ if query:
     elif "checkout" in query or "payment" in query:
         matched_module = "checkout"
 
+    # ✅ PROCESS SECTIONS
     for section in sections:
-        section_text = section.lower()
-        title = section.strip().split("\n")[0].lower()
+        # ✅ normalize hyphens for reliable matching
+        section_text = section.lower().replace("-", " ")
+        title = section.strip().split("\n")[0].lower().replace("-", " ")
 
         # ✅ SHOW ALL
         if "all" in query:
@@ -96,7 +103,7 @@ if query:
 
         if matched_module:
 
-            # ✅ STRICT TITLE MATCH
+            # ✅ STRICT MATCH
             if any(word in title for word in module_map[matched_module]):
 
                 if filter_type:
@@ -105,7 +112,7 @@ if query:
                 else:
                     results.append(section)
 
-            # ✅ SAFE FALLBACK
+            # ✅ FALLBACK FOR SECURITY
             elif matched_module in ["data security", "api security"]:
                 if matched_module in section_text:
                     if filter_type:
@@ -117,7 +124,7 @@ if query:
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
 
-    # ✅ DISPLAY
+    # ✅ DISPLAY RESULTS
     if results:
         for sec in results:
             st.text(sec)
@@ -130,4 +137,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: checkout, payment,")
+        st.write("No match found. Try: checkout, payment, xss, login, api security")
