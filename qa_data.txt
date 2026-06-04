@@ -28,8 +28,6 @@ LOGIN - E2E FLOW
 - Verify session is maintained
 
 
-LOGOUT SCENARIOS
-
 LOGOUT - POSITIVE SCENARIOS
 - Verify user can successfully log out using logout button
 - Verify user is redirected to login page after logout
@@ -53,8 +51,6 @@ LOGOUT - EDGE CASES
 - Logout during network interruption and verify consistency
 - Click logout multiple times and verify no system error
 
-
-PASSWORD RESET SCENARIOS 
 
 PASSWORD RESET - POSITIVE SCENARIOS
 - Verify user can request password reset using a valid registered email
@@ -99,8 +95,6 @@ PASSWORD RESET - E2E SCENARIOS
 - Verify success message is displayed
 - Login with new password successfully
 
-
-REGISTRATION SCENARIOS
 
 REGISTRATION - POSITIVE
 - Verify successful user registration with valid data
@@ -180,6 +174,7 @@ DOWNLOAD DOCUMENT - E2E SCENARIO
 - Verify content integrity
 - Re-login and verify document download works
 
+
 SEARCH - POSITIVE SCENARIOS
 - Verify search returns correct results for valid keyword
 - Verify search works with full match keywords
@@ -212,111 +207,176 @@ SEARCH - PERFORMANCE
 - Verify concurrent user search handling
 
 SEARCH - E2E SCENARIO
-- Login to system
-- Navigate to search page
-- Enter valid keyword
-- Verify results displayed correctly
+- Login to the system
+- Navigate to the search page
+- Enter a valid keyword
+- Verify search results are displayed correctly
 - Select a result item
-- Perform subsequent action (e.g., view details or proceed)
+- Verify navigation to the selected item details page
+- Perform a subsequent action (e.g., view details, proceed, or interact)
+- Verify system responds correctly after selection
 
 
-VEHICLE MODULE SCENARIOS
+VEHICLE SEARCH - POSITIVE SCENARIOS
+- Verify system returns correct results for valid search criteria
+- Verify search works with partial keyword input
+- Verify search results are displayed based on filters applied
+- Verify sorting options work correctly
 
-VEHICLE SEARCH
-- Verify valid search results
-- Verify no results scenario
-- Verify filtering and sorting
-- Verify partial keyword search
+VEHICLE SEARCH - NEGATIVE SCENARIOS
+- Verify no results message is shown for invalid search criteria
+- Verify system handles empty search input appropriately
+- Verify invalid filters do not break the system
 
-VEHICLE CONFIGURATION
-- Verify option selection works
-- Verify price updates correctly
-- Verify invalid configuration handling
+VEHICLE SEARCH - EDGE CASES
+- Verify search works with large dataset
+- Enter very long search input and verify system response
+- Perform rapid search requests and verify stability
 
-RELATED VEHICLE
-- Verify related vehicles displayed
-- Verify navigation works correctly
+VEHICLE CONFIGURATION - POSITIVE SCENARIOS
+- Verify user can select vehicle options successfully
+- Verify price updates correctly based on selected configuration
+- Verify configuration changes reflect immediately
 
+VEHICLE CONFIGURATION - NEGATIVE SCENARIOS
+- Select invalid options and verify proper handling
+- Verify system shows error when configuration is incomplete
 
-ORDER MODULE SCENARIOS
+VEHICLE CONFIGURATION - EDGE CASES
+- Select maximum configuration options and verify stability
+- Switch configurations repeatedly and verify consistency
 
-QUOTE SUMMARY
-- Verify correct price calculation
-- Verify tax and fee calculation
-
-ORDER JOURNEY - E2E
-- Login
-- Search vehicle
-- Configure vehicle
-- Add to cart
-- Checkout
-- Payment success
-- Order confirmation
-
-
-CHECKOUT / PAYMENT SCENARIOS
-
-POSITIVE
-- Verify successful payment with valid card
-
-NEGATIVE
-- Verify error for invalid card number
-- Verify expired card handling
-- Verify insufficient funds error
-
-EDGE CASES
-- Verify payment timeout behavior
-- Verify duplicate transaction prevention
-- Verify network failure handling
+RELATED VEHICLE - SCENARIOS
+- Verify related vehicles are displayed correctly
+- Verify navigation to related vehicle works correctly
+- Verify system handles no related vehicles gracefully
+- Verify clicking related vehicles multiple times does not break system
 
 
-API TESTING SCENARIOS
+ORDER QUOTE SUMMARY - POSITIVE SCENARIOS
+- Verify correct price calculation based on selected vehicle and configuration
+- Verify tax and additional fees are calculated correctly
+- Verify total amount matches expected value
 
-API POSITIVE
-- Verify valid API request response
-- Verify correct response structure
+ORDER QUOTE SUMMARY - NEGATIVE SCENARIOS
+- Verify system handles incorrect pricing inputs appropriately
+- Verify invalid or missing data does not break price calculation
+- Verify incorrect tax/fee values trigger error or validation
 
-API NEGATIVE
-- Verify invalid parameter handling
-- Verify missing field error
-- Verify unauthorized request (401)
-- Verify forbidden request (403)
-- Verify server error (500)
+ORDER QUOTE SUMMARY - EDGE CASES
+- Verify system handles large price values correctly
+- Verify price recalculates correctly when configuration changes repeatedly
+- Verify behavior with boundary values (minimum/maximum price)
+
+ORDER JOURNEY - E2E SCENARIO
+- Login to the system
+- Search for a vehicle
+- Configure vehicle options
+- Add vehicle to cart
+- Proceed to checkout
+- Complete payment successfully
+- Verify order confirmation is generated
+- Verify order details are saved and displayed correctly
+
+
+CHECKOUT / PAYMENT - POSITIVE SCENARIOS
+- Verify user can successfully complete payment using valid card details
+- Verify correct amount is charged based on order summary
+- Verify payment confirmation message is displayed after successful transaction
+- Verify order is created successfully after payment
+- Verify transaction ID/reference number is generated
+- Verify payment works across supported payment methods (card, wallet, etc.)
+- Verify user is redirected to confirmation page after payment
+- Verify receipt or confirmation email is sent after successful payment
+
+CHECKOUT / PAYMENT - NEGATIVE SCENARIOS
+- Enter invalid card number and verify appropriate error message is shown
+- Enter expired card details and verify transaction is rejected
+- Enter incorrect CVV and verify error message is displayed
+- Attempt payment with insufficient funds and verify failure response
+- Leave mandatory payment fields empty and verify validation errors
+- Attempt duplicate payment submission and verify system prevents double charge
+- Interrupt network during payment and verify transaction status is handled properly
+- Attempt payment using unsupported card type and verify rejection
+- Attempt payment after session timeout and verify access is denied
+- Verify system handles payment gateway failure gracefully
+
+CHECKOUT / PAYMENT - EDGE CASES
+- Verify system handles payment timeout scenarios correctly
+- Perform rapid repeated payment clicks and verify no duplicate transactions occur
+- Verify behavior when user refreshes page during payment processing
+- Verify currency handling for international payments
+- Verify large transaction amounts are processed correctly
+- Verify system recovers correctly from partial failures
+
+
+API - POSITIVE SCENARIOS
+- Send a valid API request with correct parameters and verify response status code is 200
+- Verify response body contains expected data fields and values
+- Verify response structure (JSON/XML) matches API contract/schema
+- Verify correct content-type is returned (e.g., application/json)
+- Verify API returns correct data for valid input parameters
+- Verify API handles optional parameters correctly
+- Verify API response time is within acceptable limits
+- Verify API works with valid authentication token
+- Verify API supports expected HTTP methods (GET, POST, PUT, DELETE) correctly
+- Verify data consistency between API response and database (if applicable)
+
+API - NEGATIVE SCENARIOS
+- Send request with invalid parameter values and verify API returns proper error (4xx)
+- Send request with missing required fields and verify validation error is returned
+- Send request without authentication token and verify response is 401 Unauthorized
+- Send request with invalid/expired token and verify response is 401 Unauthorized
+- Attempt access to restricted endpoint and verify response is 403 Forbidden
+- Send malformed request (invalid JSON/body format) and verify API handles error properly
+- Send request with unsupported HTTP method and verify response is 405 Method Not Allowed
+- Simulate server failure and verify API returns 500 Internal Server Error
+- Send request with large payload and verify API handles it correctly or returns proper error
+- Verify API does not expose sensitive internal error details in response
+
+API - EDGE CASES
+- Send boundary values for parameters and verify correct handling
+- Send extremely long input values and verify system stability
+- Send special characters and verify API sanitizes input properly
+- Perform rapid repeated API calls and verify rate limiting is enforced
+- Test API behavior under high load conditions
+- Retry failed requests and verify consistent API behavior
 
 API PERFORMANCE
-- Verify response time
-- Verify load handling
-- Verify rate limiting
+- Verify API response time is within acceptable limits under normal load
+- Verify API handles concurrent user requests efficiently
+- Verify API performance remains stable under heavy load conditions
+- Verify rate limiting is enforced correctly after exceeding allowed requests
+- Verify API does not degrade significantly under peak traffic
+- Verify API responds within SLA (Service Level Agreement) time
+- Verify system recovers gracefully after high load or stress
+- Verify no memory leaks or performance degradation over repeated callsg
 
 
-UI / FRONTEND SCENARIOS
-
-UI FUNCTIONAL - POSITIVE
+UI / FRONTEND - FUNCTIONAL (POSITIVE SCENARIOS)
 - Verify all buttons trigger correct actions
 - Verify forms accept valid inputs correctly
 - Verify navigation links redirect to correct pages
 - Verify dropdowns display correct options
 - Verify user interactions (click, hover, input) behave as expected
 
-UI FUNCTIONAL - NEGATIVE
+UI / FRONTEND - FUNCTIONAL (NEGATIVE SCENARIOS) 
 - Verify buttons are disabled when required fields are empty
 - Verify invalid inputs trigger appropriate error messages
 - Verify broken links display proper error or fallback page
 - Verify incorrect user actions do not crash the UI
 - Verify form submission fails when mandatory fields are missing
 
-UI FUNCTIONAL - EDGE CASES (POSITIVE)
+UI / FRONTEND - FUNCTIONAL EDGE CASES (POSITIVE SCENARIOS)
 - Verify UI handles maximum allowed input values correctly
 - Verify UI behaves correctly under fast repeated interactions
 - Verify UI works consistently across different screen sizes
 
-UI FUNCTIONAL - EDGE CASES (NEGATIVE)
+UI / FRONTEND - FUNCTIONAL EDGE CASES (NEGATIVE SCENARIOS)
 - Enter extremely long input values and verify UI handling
 - Perform rapid repeated clicks and verify no duplication or error
 - Try unexpected user actions (double submit, refresh page mid-action)
 
-
-UI NON-FUNCTIONAL SCENARIOS
 
 UI NON-FUNCTIONAL - POSITIVE
 - Verify responsive design works across mobile, tablet, and desktop
@@ -352,32 +412,26 @@ UI NON-FUNCTIONAL - E2E SCENARIO
 - Verify UI remains responsive and stable throughout
 
 
-SECURITY SCENARIOS
-
-SQL INJECTION
-
-SQL INJECTION - POSITIVE
+SECURITY SCENARIOS SQL INJECTION - POSITIVE
 - Verify system handles valid inputs securely
 - Verify system accepts valid input without triggering security alerts
 - Verify database queries execute correctly with safe input
 - Verify safe queries return expected database results
 
-SQL INJECTION - NEGATIVE
+SECURITY SCENARIOS SQL INJECTION - NEGATIVE
 - Attempt SQL injection using input fields (e.g., ' OR '1'='1) and verify it is blocked
 - Verify application uses parameterized queries to prevent injection
 - Verify system does not expose database errors or sensitive information
 - Attempt SQL injection and verify system blocks it
 - Verify no sensitive data exposed in error messages
 
-SQL INJECTION - EDGE CASES
+SSECURITY SCENARIOS SQL INJECTION - EDGE CASES
 - Inject complex SQL statements and verify system handles securely
 - Attempt SQL injection across multiple input fields simultaneously
 - Verify system logs and detects suspicious activities
 
 
-CROSS-SITE SCRIPTING (XSS)
-
-XSS - POSITIVE
+CROSS-SITE SCRIPTING (XSS) - POSITIVE
 - Session hijacking protection
 - Authorization validation
 - Authentication bypass attempts
@@ -386,7 +440,7 @@ XSS - POSITIVE
 - Verify application processes valid user input without errors
 - Verify allowed content (safe text/formatting) displays correctly
 
-XSS - NEGATIVE
+CROSS-SITE SCRIPTING (XSS)- NEGATIVE
 - Attempt script injection (e.g., <script>alert()</script>) and verify it is blocked
 - Verify input fields sanitize user input properly
 - Verify output encoding prevents script execution
@@ -395,7 +449,7 @@ XSS - NEGATIVE
 - Verify scripts injected via form fields are blocked
 - Verify scripts injected via URL parameters are not executed
 
-XSS - EDGE CASES
+CROSS-SITE SCRIPTING (XSS)- EDGE CASES
 - Inject scripts through URL parameters
 - Inject scripts through file upload or form submission
 - Verify system stability when multiple malicious inputs are attempted
@@ -404,36 +458,32 @@ XSS - EDGE CASES
 - Verify system does not crash when handling unexpected script inputs
 
 
-SESSION HIJACKING PROTECTION SCENARIOS
-
-POSITIVE SCENARIOS
+SESSION HIJACKING PROTECTION (POSITIVE SCENARIOS)
 - Verify session is created after successful login
 - Verify session remains active during valid user activity
 - Verify session is unique per logged-in user
 
-NEGATIVE SCENARIOS
+SESSION HIJACKING PROTECTION (NEGATIVE SCENARIOS)
 - Attempt to reuse session after logout and verify access is denied
 - Attempt to use expired session token and verify rejection
 - Attempt session access from different browser/device and verify security behavior
 
-EDGE CASES
+SESSION HIJACKING PROTECTION EDGE CASES
 - Logout from one tab and verify session is invalidated across all tabs
 - Simulate session reuse and verify it is blocked
 - Test behavior when session expires during active usage
 
 
-AUTHENTICATION & AUTHORIZATION SCENARIOS
-
-POSITIVE
+AUTHENTICATION & AUTHORIZATION (SCENARIOS POSITIVE)
 - Verify only valid users can access system features
 - Verify correct role-based access control works (admin vs user)
 
-NEGATIVE
+AUTHENTICATION & AUTHORIZATION (SCENARIOS NEGATIVE)
 - Attempt access without login and verify access is denied
 - Attempt access to restricted pages with low privilege user
 - Attempt to bypass authentication and verify prevention
 
-EDGE CASES
+AUTHENTICATION & AUTHORIZATION EDGE CASES
 - Try session reuse after logout and verify access denied
 - Attempt access with expired session token
 - Attempt simultaneous session usage and verify behavior
@@ -442,53 +492,61 @@ EDGE CASES
 - Verify role changes are applied correctly without unauthorized access
 
 
-SESSION MANAGEMENT SCENARIOS
-
-POSITIVE
+SESSION MANAGEMENT (SCENARIOS POSITIVE)
 - Verify session starts after login
 - Verify session persists during active usage
 
-NEGATIVE
+SESSION MANAGEMENT (SCENARIOS NEGATIVE)
 - Verify session expires after inactivity timeout
 - Verify session is invalid after logout
 
-EDGE CASES
+SESSION MANAGEMENT EDGE CASES
 - Simulate session hijacking attempt and verify protection
 - Verify session invalidation across all tabs and devices
 - Test behavior during network interruption
 
 
-DATA SECURITY SCENARIOS
-
-POSITIVE
+DATA SECURITY (SCENARIOS POSITIVE)
 - Verify sensitive data is encrypted (passwords, personal data)
 - Verify secure communication (HTTPS) is enforced and HTTP requests are redirected or blocked
 
-NEGATIVE
+DATA SECURITY (SCENARIOS NEGATIVE)
 -  Attempt to access sensitive data without authorization and verify restriction
 - Verify no sensitive data is exposed in logs or UI
 
-EDGE CASES
+DATA SECURITY EDGE CASES
 - Verify handling of large sensitive datasets
 - Verify system behavior during encryption/decryption failures
 
 
-API SECURITY SCENARIOS
+API SECURITY (SCENARIOS POSITIVE)
+- Verify API requests with valid authentication token return correct response
+- Verify secure endpoints allow access only to authorized users
+- Verify role-based access control is enforced correctly (admin vs user)
+- Verify API uses HTTPS for secure communication
+- Verify sensitive data is transmitted securely (encrypted)
+- Verify API tokens are generated securely and expire as expected
 
-POSITIVE
--  Verify API requests with valid authentication return correct response
-- Verify secure endpoints return correct responses
+API SECURITY (SCENARIOS NEGATIVE)
+- Verify API call without authentication token returns 401 Unauthorized
+- Verify API call with invalid or expired token returns 401 Unauthorized
+- Verify access to restricted endpoints returns 403 Forbidden
+- Attempt token manipulation and verify request is rejected
+- Attempt to access another user’s data and verify access is denied
+- Verify API does not expose sensitive data in error messages
+- Attempt injection attacks (SQL/XSS) via API and verify it is blocked
+- Attempt bypass of authentication and verify prevention
+- Verify API rejects requests over unsecured HTTP (if HTTPS enforced)
 
-NEGATIVE
-- Verify unauthorized API calls return 401
-- Verify forbidden access returns 403 error
-- Attempt token manipulation and verify rejection
-
-EDGE CASES
-- Test expired tokens and verify correct handling
-- Simulate brute force attacks on API endpoints
+API SECURITY EDGE CASES
+- Test expired tokens and verify proper error handling
+- Simulate brute force attacks on API endpoints and verify protection
 - Verify rate limiting prevents excessive requests
-
+- Send multiple invalid authentication attempts and verify account protection (if applicable)
+- Test API under high load with secure endpoints and verify stability
+- Verify system handles simultaneous token usage securely
+- Attempt replay attacks and verify they are prevented
+- Test very long or malformed tokens and verify system stability
 
 SECURITY TESTING - E2E SCENARIO
 - Login to system
@@ -499,15 +557,13 @@ SECURITY TESTING - E2E SCENARIO
 - Logout and verify session termination
 
 
-PERFORMANCE SCENARIOS
-
-PERFORMANCE TESTING - POSITIVE
+PERFORMANCE TESTING (POSITIVE SCENARIOS)
 - Verify system handles expected user load without degradation
 - Verify response time remains within acceptable limits under normal conditions
 - Verify application performs efficiently with standard data volume
 - Verify system maintains stability during moderate concurrent usage
 
-PERFORMANCE TESTING - NEGATIVE
+PERFORMANCE TESTING ( NEGATIVE SCENARIOS)
 - Verify system behavior under excessive load beyond capacity
 - Verify system degrades gracefully under stress conditions
 - Verify response timeout errors are handled properly
@@ -527,16 +583,15 @@ PERFORMANCE TESTING - E2E SCENARIO
 - Simulate multiple users performing login, search, and checkout simultaneously
 - Measure response time across workflows
 - Validate system stability and throughput under load
+ 
 
-DATABASE SCENARIOS
-
-DATABASE TESTING - POSITIVE
+DATABASE TESTING ( SCENARIOS POSITIVE)
 - Verify data is saved correctly after valid transactions
 - Verify data retrieval returns accurate and consistent results
 - Verify updates are correctly reflected in the database
 - Verify database integrity is maintained after operations
 
-DATABASE TESTING - NEGATIVE
+DATABASE TESTING ( SCENARIOS NEGATIVE 
 - Verify invalid data is not stored in the database
 - Verify database rejects duplicate records where constraints exist
 - Verify incorrect queries or operations do not corrupt data
@@ -582,15 +637,13 @@ DATABASE TESTING - E2E SCENARIO
 - Verify data consistency after complete flow
 
 
-ACCESSIBILITY SCENARIOS
-
-ACCESSIBILITY - POSITIVE
+ACCESSIBILITY (SCENARIOS POSITIVE)
 - Verify full keyboard navigation is supported across all pages
 - Verify screen reader compatibility for all UI elements
 - Verify sufficient color contrast for readability
 - Verify focus indicators are visible on all interactive elements
 
-ACCESSIBILITY - NEGATIVE
+ACCESSIBILITY (SCENARIOS NEGATIVE)
 - Verify missing alt text for images is detected and flagged
 - Verify insufficient color contrast is identified correctly
 - Verify inaccessible elements (buttons/links) are handled properly
@@ -613,15 +666,13 @@ ACCESSIBILITY - E2E SCENARIO
 - Verify accessibility compliance throughout the journey
 
 
-REGRESSION SCENARIOS
-
-REGRESSION TESTING - POSITIVE
+REGRESSION TESTING (SCENARIOS POSITIVE)
 - Verify existing functionalities work after new feature implementation
 - Verify previously fixed bugs do not reappear
 - Verify core application flows (login, search, checkout) still work
 - Verify system behaves correctly after code changes or upgrades
 
-REGRESSION TESTING - NEGATIVE
+REGRESSION TESTING (SCENARIOS NEGATIVE)
 - Verify new changes do not break existing features
 - Verify previously working functionalities do not fail after deployment
 - Verify old defects are not reintroduced
