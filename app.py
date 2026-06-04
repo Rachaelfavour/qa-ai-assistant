@@ -5,7 +5,6 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ KEEP YOUR SPLIT
 sections = re.split(
     r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
@@ -32,117 +31,64 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE DETECTION (BASED ON YOUR DATA)
-    if "ui non functional" in query:
-        module = "ui_non_functional"
-    elif "ui" in query or "frontend" in query:
-        module = "ui"
-    elif "cross site scripting" in query or "xss" in query:
-        module = "xss"
-    elif "session" in query:
-        module = "session"
-    elif "accessibility" in query:
-        module = "accessibility"
-    elif "regression" in query:
-        module = "regression"
-    elif "database" in query:
-        module = "database"
-    elif "checkout" in query or "payment" in query:
-        module = "checkout"
-    elif "api security" in query:
-        module = "api_security"
-    elif "data security" in query:
-        module = "data_security"
-    elif "api" in query:
-        module = "api"
-    elif "login" in query:
-        module = "login"
-    elif "logout" in query:
-        module = "logout"
-    else:
-        module = None
-
+    # ✅ LOOP
     for section in sections:
         section_text = section.lower()
-        title = section.strip().split("\n")[0].lower()
-        title = title.replace("/", " ").replace("-", " ")
 
-        if not module:
-            continue
+        # ✅ GET TITLE
+        raw_title = section.strip().split("\n")[0]
+        title = raw_title.lower().replace("/", " ").replace("-", " ")
 
-        # ✅ CHECKOUT
-        if module == "checkout":
-            if "checkout payment" in title:
-                results.append(section)
+        # ✅ EXTRACT MAIN MODULE (VERY IMPORTANT FIX)
+        main_module = title.split(" - ")[0].strip()
 
-        # ✅ UI FRONTEND ONLY
-        elif module == "ui":
-            if "ui frontend" in title:
-                results.append(section)
+        # ✅ MATCH BASED ON YOUR FILE STRUCTURE
+        if query in title or query in section_text:
 
-        # ✅ UI NON-FUNCTIONAL ONLY
-        elif module == "ui_non_functional":
-            if "ui non functional" in title:
-                results.append(section)
+            # ✅ FIX 1: REMOVE LOGOUT FROM SESSION SEARCH
+            if "session" in query:
+                if main_module == "logout":
+                    continue
 
-        # ✅ ✅ XSS FIX (EXACT TITLE)
-        elif module == "xss":
-            if "cross site scripting" in title:
-                results.append(section)
+            # ✅ FIX 2: UI FRONTEND vs NON-FUNCTIONAL
+            if "ui frontend" in query or "ui" in query:
+                if "non functional" in title:
+                    continue
 
-        # ✅ ✅ SESSION FIX (REMOVE LOGOUT)
-        elif module == "session":
-            if title.startswith("session"):
-                results.append(section)
+            if "ui non functional" in query:
+                if "non functional" not in title:
+                    continue
 
-        # ✅ ACCESSIBILITY FIX
-        elif module == "accessibility":
-            if title.startswith("accessibility"):
-                results.append(section)
+            # ✅ FIX 3: CROSS-SITE SCRIPTING
+            if "cross site scripting" in query or "xss" in query:
+                if "cross site scripting" not in title:
+                    continue
 
-        # ✅ REGRESSION FIX
-        elif module == "regression":
-            if title.startswith("regression testing"):
-                results.append(section)
+            # ✅ FIX 4: ACCESSIBILITY STRICT
+            if "accessibility" in query:
+                if not main_module.startswith("accessibility"):
+                    continue
 
-        # ✅ DATABASE FIX
-        elif module == "database":
-            if title.startswith("database testing"):
-                results.append(section)
+            # ✅ FIX 5: REGRESSION STRICT
+            if "regression" in query:
+                if not main_module.startswith("regression"):
+                    continue
 
-        # ✅ API SECURITY
-        elif module == "api_security":
-            if "api security" in section_text:
-                results.append(section)
+            # ✅ FIX 6: DATABASE STRICT
+            if "database" in query:
+                if not main_module.startswith("database"):
+                    continue
 
-        # ✅ DATA SECURITY
-        elif module == "data_security":
-            if "data security" in section_text:
-                results.append(section)
+            results.append(section)
 
-        # ✅ API ONLY
-        elif module == "api":
-            if "api -" in title:
-                results.append(section)
-
-        # ✅ LOGIN
-        elif module == "login":
-            if title.startswith("login"):
-                results.append(section)
-
-        # ✅ LOGOUT
-        elif module == "logout":
-            if title.startswith("logout"):
-                results.append(section)
-
-    # ✅ FILTER APPLY
+    # ✅ FILTER TYPE
     if filter_type:
         results = [sec for sec in results if filter_type in sec.lower()]
 
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
 
-    # ✅ DISPLAY
+    # ✅ OUTPUT
     if results:
         for sec in results:
             st.text(sec)
@@ -154,6 +100,5 @@ if query:
             download_text,
             "qa_test_scenarios.txt"
         )
-
     else:
         st.write("No match found.")
