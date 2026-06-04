@@ -50,7 +50,7 @@ if query:
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
-        "ui non-functional": ["non functional"],
+        "ui non-functional": ["ui non functional"],
         
         "accessibility": ["accessibility"],
         "regression": ["regression"],
@@ -104,7 +104,7 @@ if query:
                 if "non functional" in title:
                     results.append(section)
 
-            elif "xss" in query or "cross site scripting" in query:
+            elif "xss" in query or "cross site scripting" in query or "cross-site scripting" in query:
                 if "xss" in title or "cross site scripting" in title:
                     results.append(section)
 
@@ -163,4 +163,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: login, checkout payment, ui frontend, api security, data security.")
+        st.write("No match found. Please try different keywords.")
