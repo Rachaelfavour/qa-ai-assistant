@@ -305,7 +305,7 @@ ORDER JOURNEY - E2E SCENARIO
 - Verify order details are saved and displayed correctly
 
 
-CHECKOUT / PAYMENT - POSITIVE SCENARIOS
+CHECKOUT PAYMENT - POSITIVE SCENARIOS
 - Verify user can successfully complete payment using valid card details
 - Verify correct amount is charged based on order summary
 - Verify payment confirmation message is displayed after successful transaction
@@ -315,7 +315,7 @@ CHECKOUT / PAYMENT - POSITIVE SCENARIOS
 - Verify user is redirected to confirmation page after payment
 - Verify receipt or confirmation email is sent after successful payment
 
-CHECKOUT / PAYMENT - NEGATIVE SCENARIOS
+CHECKOUT PAYMENT - NEGATIVE SCENARIOS
 - Enter invalid card number and verify appropriate error message is shown
 - Enter expired card details and verify transaction is rejected
 - Enter incorrect CVV and verify error message is displayed
@@ -327,7 +327,7 @@ CHECKOUT / PAYMENT - NEGATIVE SCENARIOS
 - Attempt payment after session timeout and verify access is denied
 - Verify system handles payment gateway failure gracefully
 
-CHECKOUT / PAYMENT - EDGE CASES
+CHECKOUT PAYMENT - EDGE CASES
 - Verify system handles payment timeout scenarios correctly
 - Perform rapid repeated payment clicks and verify no duplicate transactions occur
 - Verify behavior when user refreshes page during payment processing
