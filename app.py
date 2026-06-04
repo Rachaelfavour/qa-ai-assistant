@@ -17,7 +17,7 @@ query = st.text_input("Search or ask a QA question:")
 
 if query:
     query = query.lower()
-    query = query.replace("/", " ").replace("-", " ")   # ✅ FIX UI + checkout cases
+    query = query.replace("/", " ").replace("-", " ")
 
     st.write("### Suggested Test Scenarios")
 
@@ -33,7 +33,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP (KEPT SAME STRUCTURE)
+    # ✅ MODULE MAP
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -46,7 +46,7 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout", "payment"],   # ✅ FIXED
+        "checkout": ["checkout", "payment"],
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
@@ -70,24 +70,20 @@ if query:
         if any(word in query for word in words):
             matched_module = key
 
-    # ✅ PRIORITY MATCHES (STRICT)
+    # ✅ PRIORITY FIXES
     if "api security" in query:
         matched_module = "api security"
     elif "data security" in query:
         matched_module = "data security"
+    elif "ui non functional" in query:
+        matched_module = "ui non-functional"
     elif "checkout" in query or "payment" in query:
         matched_module = "checkout"
-    elif "upload" in query:
-        matched_module = "upload"
-    elif "download" in query:
-        matched_module = "download"
-    elif "search" in query:
-        matched_module = "search"
 
     for section in sections:
         section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
-        title = title.replace("/", " ").replace("-", " ")   # ✅ FIX titles
+        title = title.replace("/", " ").replace("-", " ")
 
         # ✅ SHOW ALL
         if "all" in query:
@@ -96,57 +92,60 @@ if query:
 
         if matched_module:
 
-            # ✅ CHECKOUT / PAYMENT FIX
             if matched_module == "checkout":
                 if "checkout" in title or "payment" in title:
-                    if filter_type:
-                        if filter_type in title:
-                            results.append(section)
-                    else:
-                        results.append(section)
+                    results.append(section)
 
-            # ✅ UI FIX
             elif matched_module == "ui":
-                if "ui" in title or "frontend" in title:
-                    if filter_type:
-                        if filter_type in title:
-                            results.append(section)
-                    else:
-                        results.append(section)
+                if ("ui" in title or "frontend" in title) and "non functional" not in title:
+                    results.append(section)
 
             elif matched_module == "ui non-functional":
                 if "non functional" in title:
-                    if filter_type:
-                        if filter_type in title:
-                            results.append(section)
-                    else:
-                        results.append(section)
+                    results.append(section)
 
-            # ✅ API SECURITY STRICT
+            elif "xss" in query or "cross site scripting" in query:
+                if "xss" in title or "cross site scripting" in title:
+                    results.append(section)
+
+            elif matched_module == "session":
+                if "session management" in title or "session hijacking" in title:
+                    results.append(section)
+
             elif matched_module == "api security":
                 if "api security" in section_text:
-                    if filter_type:
-                        if filter_type in section_text:
-                            results.append(section)
-                    else:
-                        results.append(section)
+                    results.append(section)
 
-            # ✅ DATA SECURITY STRICT
             elif matched_module == "data security":
                 if "data security" in section_text:
-                    if filter_type:
-                        if filter_type in section_text:
-                            results.append(section)
-                    else:
-                        results.append(section)
-
-            # ✅ GENERAL MATCH
-            elif any(word in title for word in module_map[matched_module]):
-                if filter_type:
-                    if filter_type in title:
-                        results.append(section)
-                else:
                     results.append(section)
+
+            elif matched_module == "accessibility":
+                if "accessibility" in title:
+                    results.append(section)
+
+            elif matched_module == "regression":
+                if "regression" in title:
+                    results.append(section)
+
+            elif matched_module == "database":
+                if "database" in title:
+                    results.append(section)
+
+            elif matched_module == "performance":
+                if "performance" in title:
+                    results.append(section)
+
+            elif matched_module == "api":
+                if "api" in title and "api security" not in title:
+                    results.append(section)
+
+            elif any(word in title for word in module_map[matched_module]):
+                results.append(section)
+
+    # ✅ APPLY FILTER
+    if filter_type:
+        results = [sec for sec in results if filter_type in sec.lower()]
 
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
@@ -164,4 +163,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: checkout, ui frontend, api security, etc.")
+        st.write("No match found. Try: login, checkout payment, ui frontend, api security, data security.")
