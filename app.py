@@ -31,7 +31,55 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP (FIXED XSS)
+    matched_module = None
+
+    # ✅ ✅ PRIORITY MATCHING (MOST IMPORTANT FIX)
+    if "ui non-functional" in query:
+        matched_module = "ui non-functional"
+    elif "data security" in query:
+        matched_module = "data security"
+    elif "api security" in query:
+        matched_module = "api security"
+    elif "cross-site scripting" in query or "cross site scripting" in query or "xss" in query:
+        matched_module = "cross site scripting"
+    elif "regression" in query:
+        matched_module = "regression"
+    elif "accessibility" in query:
+        matched_module = "accessibility"
+    elif "checkout" in query or "payment" in query:
+        matched_module = "checkout"
+    elif "upload" in query:
+        matched_module = "upload"
+    elif "download" in query:
+        matched_module = "download"
+    elif "search" in query:
+        matched_module = "search"
+    elif "login" in query:
+        matched_module = "login"
+    elif "logout" in query:
+        matched_module = "logout"
+    elif "registration" in query:
+        matched_module = "registration"
+    elif "password" in query:
+        matched_module = "password reset"
+    elif "vehicle" in query:
+        matched_module = "vehicle"
+    elif "order" in query:
+        matched_module = "order"
+    elif "api" in query:
+        matched_module = "api"
+    elif "database" in query:
+        matched_module = "database"
+    elif "performance" in query:
+        matched_module = "performance"
+    elif "security" in query:
+        matched_module = "security"
+    elif "session" in query:
+        matched_module = "session"
+    elif "authentication" in query or "authorization" in query:
+        matched_module = "authentication"
+
+    # ✅ MODULE MAP
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -44,13 +92,12 @@ if query:
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout", "payment"],  
+        "checkout": ["checkout", "payment"],
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
-        "ui non-functional": ["ui non-functional"],
+        "ui non-functional": ["ui non functional"],
 
-        # ✅ FIXED XSS SUPPORT
         "cross site scripting": [
             "cross site scripting",
             "cross-site scripting",
@@ -69,30 +116,8 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-    matched_module = None
-
-    # ✅ FIND MATCH
-    for key, words in module_map.items():
-        if any(word in query for word in words):
-            matched_module = key
-
-    # ✅ PRIORITY MATCHES
-    if "data security" in query:
-        matched_module = "data security"
-    elif "api security" in query:
-        matched_module = "api security"
-    elif "search" in query:
-        matched_module = "search"
-    elif "upload" in query:
-        matched_module = "upload"
-    elif "download" in query:
-        matched_module = "download"
-    elif "checkout" in query or "payment" in query:
-        matched_module = "checkout"
-
     # ✅ PROCESS SECTIONS
     for section in sections:
-        # ✅ normalize hyphens for reliable matching
         section_text = section.lower().replace("-", " ")
         title = section.strip().split("\n")[0].lower().replace("-", " ")
 
@@ -104,7 +129,7 @@ if query:
         if matched_module:
 
             # ✅ STRICT MATCH
-            if any(word in title for word in module_map[matched_module]):
+            if any(word in title for word in module_map.get(matched_module, [])):
 
                 if filter_type:
                     if filter_type in title:
@@ -137,4 +162,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: checkout, payment, xss, login, api security")
+        st.write("No match found. Try: ui non-functional, xss, regression, login")
