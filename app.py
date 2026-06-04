@@ -5,15 +5,15 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ FIXED SPLIT (ONLY CHANGE MADE HERE ✅)
+# ✅ FIXED SPLIT
 sections = re.split(
-    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION &amp; AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
+    r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
 )
 
 st.title("QA Assistant Chatbot 🤖")
 
-query = st.text_input("Ask a QA question:")
+query = st.text_input("Search or ask a QA question:")
 
 if query:
     query = query.lower()
@@ -22,7 +22,7 @@ if query:
     results = []
     download_text = ""
 
-    # ✅ filter type
+    # ✅ FILTER TYPE
     filter_type = None
     if "positive" in query:
         filter_type = "positive"
@@ -31,12 +31,16 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ FULL MODULE MAP (UNCHANGED ✅)
+    # ✅ MODULE MAP (NOW COMPLETE ✅)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
         "password reset": ["password"],
         "registration": ["registration"],
+        "search": ["search"],
+
+        "upload": ["upload"],              
+        "download": ["download"],          
 
         "vehicle": ["vehicle"],
         "order": ["order"],
@@ -63,38 +67,52 @@ if query:
     for key, words in module_map.items():
         if any(word in query for word in words):
             matched_module = key
-            break
+
+    # ✅ PRIORITY FIXES (STRICT MATCH)
+    if "data security" in query:
+        matched_module = "data security"
+    elif "api security" in query:
+        matched_module = "api security"
+    elif "search" in query:
+        matched_module = "search"
+    elif "upload" in query:
+        matched_module = "upload"       
+    elif "download" in query:
+        matched_module = "download"     
 
     for section in sections:
+        section_text = section.lower()
         title = section.strip().split("\n")[0].lower()
 
-        # ✅ show all
+        # ✅ SHOW ALL
         if "all" in query:
             results.append(section)
             continue
 
         if matched_module:
-            # ✅ special handling for SECURITY (UNCHANGED ✅)
-            if matched_module == "security":
-                if any(sec in title for sec in ["sql", "xss", "session", "security"]):
+
+            # ✅ STRICT TITLE MATCH
+            if any(word in title for word in module_map[matched_module]):
+
+                if filter_type:
+                    if filter_type in title:
+                        results.append(section)
+                else:
+                    results.append(section)
+
+            # ✅ SAFE FALLBACK (LIMITED)
+            elif matched_module in ["data security", "api security"]:
+                if matched_module in section_text:
                     if filter_type:
-                        if filter_type in title:
+                        if filter_type in section_text:
                             results.append(section)
                     else:
                         results.append(section)
 
-            else:
-                if any(word in title for word in module_map[matched_module]):
-                    if filter_type:
-                        if filter_type in title:
-                            results.append(section)
-                    else:
-                        results.append(section)
-
-    # ✅ remove duplicates
+    # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
 
-    # ✅ display
+    # ✅ DISPLAY
     if results:
         for sec in results:
             st.text(sec)
@@ -107,4 +125,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: accessibility, api, database, regression, etc.")
+        st.write("No match found. Try: upload, download, login, search, etc.")
