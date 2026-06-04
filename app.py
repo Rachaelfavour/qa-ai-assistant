@@ -5,6 +5,7 @@ import re
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
+# ✅ KEEP YOUR SPLIT
 sections = re.split(
     r"\n(?=[A-Z ]+ -|===|[A-Z ]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
@@ -31,64 +32,83 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ LOOP
+    # ✅ MODULE DETECTION
+    if "ui non functional" in query:
+        module = "ui non functional"
+    elif "ui" in query or "frontend" in query:
+        module = "ui"
+    elif "cross site scripting" in query or "xss" in query:
+        module = "cross site scripting"
+    elif "session" in query:
+        module = "session"
+    elif "accessibility" in query:
+        module = "accessibility"
+    elif "regression" in query:
+        module = "regression"
+    elif "database" in query:
+        module = "database"
+    elif "checkout" in query or "payment" in query:
+        module = "checkout payment"
+    elif "api security" in query:
+        module = "api security"
+    elif "data security" in query:
+        module = "data security"
+    elif "api" in query:
+        module = "api"
+    elif "login" in query:
+        module = "login"
+    elif "logout" in query:
+        module = "logout"
+    else:
+        module = None
+
     for section in sections:
         section_text = section.lower()
+        title = section.strip().split("\n")[0].lower()
+        title = title.replace("/", " ").replace("-", " ")
 
-        # ✅ GET TITLE
-        raw_title = section.strip().split("\n")[0]
-        title = raw_title.lower().replace("/", " ").replace("-", " ")
+        if not module:
+            continue
 
-        # ✅ EXTRACT MAIN MODULE (VERY IMPORTANT FIX)
-        main_module = title.split(" - ")[0].strip()
+        if module in title:
 
-        # ✅ MATCH BASED ON YOUR FILE STRUCTURE
-        if query in title or query in section_text:
+            # ✅ FIX: remove logout from session
+            if module == "session" and "logout" in title:
+                continue
 
-            # ✅ FIX 1: REMOVE LOGOUT FROM SESSION SEARCH
-            if "session" in query:
-                if main_module == "logout":
-                    continue
+            # ✅ FIX: UI separation
+            if module == "ui" and "non functional" in title:
+                continue
+            if module == "ui non functional" and "non functional" not in title:
+                continue
 
-            # ✅ FIX 2: UI FRONTEND vs NON-FUNCTIONAL
-            if "ui frontend" in query or "ui" in query:
-                if "non functional" in title:
-                    continue
+            # ✅ FIX: accessibility strict
+            if module == "accessibility" and not title.startswith("accessibility"):
+                continue
 
-            if "ui non functional" in query:
-                if "non functional" not in title:
-                    continue
+            # ✅ FIX: regression strict
+            if module == "regression" and not title.startswith("regression"):
+                continue
 
-            # ✅ FIX 3: CROSS-SITE SCRIPTING
-            if "cross site scripting" in query or "xss" in query:
-                if "cross site scripting" not in title:
-                    continue
+            # ✅ FIX: database strict
+            if module == "database" and not title.startswith("database"):
+                continue
 
-            # ✅ FIX 4: ACCESSIBILITY STRICT
-            if "accessibility" in query:
-                if not main_module.startswith("accessibility"):
-                    continue
-
-            # ✅ FIX 5: REGRESSION STRICT
-            if "regression" in query:
-                if not main_module.startswith("regression"):
-                    continue
-
-            # ✅ FIX 6: DATABASE STRICT
-            if "database" in query:
-                if not main_module.startswith("database"):
+            # ✅ FIX: XSS match
+            if module == "cross site scripting":
+                if "cross site scripting" not in title and "xss" not in title:
                     continue
 
             results.append(section)
 
-    # ✅ FILTER TYPE
+    # ✅ FILTER
     if filter_type:
         results = [sec for sec in results if filter_type in sec.lower()]
 
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
 
-    # ✅ OUTPUT
+    # ✅ DISPLAY
     if results:
         for sec in results:
             st.text(sec)
