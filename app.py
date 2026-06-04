@@ -31,7 +31,7 @@ if query:
     elif "edge" in query:
         filter_type = "edge"
 
-    # ✅ MODULE MAP (NOW COMPLETE ✅)
+    # ✅ MODULE MAP (ONLY CHANGE: checkout fixed ✅)
     module_map = {
         "login": ["login"],
         "logout": ["logout"],
@@ -39,12 +39,12 @@ if query:
         "registration": ["registration"],
         "search": ["search"],
 
-        "upload": ["upload"],              
-        "download": ["download"],          
+        "upload": ["upload"],
+        "download": ["download"],
 
         "vehicle": ["vehicle"],
         "order": ["order"],
-        "checkout": ["checkout", "payment"],
+        "checkout": ["checkout / payment"],  # ✅ FIXED HERE
         "api": ["api"],
 
         "ui": ["ui", "frontend"],
@@ -68,7 +68,7 @@ if query:
         if any(word in query for word in words):
             matched_module = key
 
-    # ✅ PRIORITY FIXES (STRICT MATCH)
+    # ✅ PRIORITY MATCHES (ONLY ADDED CHECKOUT FIX ✅)
     if "data security" in query:
         matched_module = "data security"
     elif "api security" in query:
@@ -76,9 +76,11 @@ if query:
     elif "search" in query:
         matched_module = "search"
     elif "upload" in query:
-        matched_module = "upload"       
+        matched_module = "upload"
     elif "download" in query:
-        matched_module = "download"     
+        matched_module = "download"
+    elif "checkout" in query or "payment" in query:   # ✅ FIXED HERE
+        matched_module = "checkout"
 
     for section in sections:
         section_text = section.lower()
@@ -100,7 +102,7 @@ if query:
                 else:
                     results.append(section)
 
-            # ✅ SAFE FALLBACK (LIMITED)
+            # ✅ SAFE FALLBACK (UNCHANGED)
             elif matched_module in ["data security", "api security"]:
                 if matched_module in section_text:
                     if filter_type:
@@ -125,4 +127,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: upload, download, login, search, etc.")
+        st.write("No match found. Try: checkout, payment, login, etc.")
