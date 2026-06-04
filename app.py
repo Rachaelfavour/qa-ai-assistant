@@ -49,7 +49,7 @@ if query:
 
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non-functional"],
-        "cross site scripting":  ["cross site scripting"],
+        "cross site scripting or "xss":  ["cross site scripting or "xss"],
         
         "accessibility": ["accessibility"],
         "regression": ["regression"],
