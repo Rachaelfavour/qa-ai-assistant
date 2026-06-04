@@ -96,57 +96,83 @@ PASSWORD RESET - E2E SCENARIOS
 - Login with new password successfully
 
 
-REGISTRATION - POSITIVE
-- Verify successful user registration with valid data
-- Verify email verification flow completes successfully
+REGISTRATION - POSITIVE SCENARIOS
+- Verify user can successfully register with valid input data
+- Verify email verification process completes successfully
+- Verify confirmation message is displayed after successful registration
+- Verify account is created in the system/database
+- Verify user can login after successful registration
+- Verify password is stored securely (encrypted)
+- Verify system sends confirmation email after registration
+- Verify mandatory fields accept valid inputs correctly
 
-REGISTRATION - NEGATIVE
-- Verify error for duplicate account
+REGISTRATION - NEGATIVE SCENARIOS
+- Verify error message for duplicate email or existing account
 - Verify validation for invalid email format
-- Verify password mismatch error
+- Verify password mismatch error is displayed
+- Verify registration fails when mandatory fields are left empty
+- Verify weak password is rejected based on policy
+- Verify invalid input formats (e.g. numbers in name fields) are handled correctly
+- Verify system does not accept invalid special characters (where restricted)
+- Verify registration fails when terms and conditions are not accepted (if applicable)
 
 REGISTRATION - EDGE CASES (POSITIVE)
-- Verify system handles maximum field input correctly
+- Verify system handles maximum allowed input length correctly
+- Verify registration works with boundary values (e.g. minimum password length)
+- Verify registration works across different browsers/devices
+- Verify system handles optional fields correctly
 
 REGISTRATION - EDGE CASES (NEGATIVE)
-- Enter very long input and verify rejection
-- Enter special characters and verify validation
-- Leave mandatory fields empty and verify error message
-
+- Enter extremely long input values beyond limit and verify rejection
+- Enter special characters and verify validation/sanitization
+- Submit form rapidly multiple times and verify no duplicate account is created
+- Interrupt network during registration and verify system handling
+- Try using previously used credentials (if restricted) and verify behavior
+- Perform registration with very slow network and verify system response
 
 UPLOAD DOCUMENT - POSITIVE SCENARIOS
-- Verify user can upload valid document successfully
-- Verify uploaded document is displayed correctly
-- Verify multiple documents upload works properly
+- Verify user can upload a valid document successfully
+- Verify uploaded document is displayed correctly after upload
+- Verify multiple documents can be uploaded at the same time
+- Verify supported file formats (PDF, JPG, PNG, etc.) are accepted
+- Verify uploaded document is saved correctly in the system
+- Verify uploaded document can be viewed/downloaded after upload
+- Verify upload progress indicator (if available) works correctly
+- Verify success message is displayed after successful upload
 
 UPLOAD DOCUMENT - NEGATIVE SCENARIOS
-- Upload unsupported file format and verify error
-- Upload file exceeding size limit and verify validation
+- Upload unsupported file format and verify appropriate error message is shown
+- Upload file exceeding size limit and verify validation message
 - Upload corrupted file and verify rejection
-
-UPLOAD DOCUMENT - VALIDATION CHECKS
-- Verify file type validation (PDF, JPG, PNG)
-- Verify file size restrictions
-- Verify duplicate upload handling
+- Attempt upload without selecting a file and verify validation error
+- Attempt upload with empty file and verify system response
+- Attempt upload with invalid file name and verify handling
+- Interrupt network during upload and verify system handles failure properly
+- Attempt upload after session timeout and verify access is denied
 
 UPLOAD DOCUMENT - EDGE CASES
-- Upload file with special characters
-- Upload very large file and verify performance
-- Upload empty file and verify rejection
-- Upload during unstable network
+- Upload file with maximum allowed size and verify successful upload
+- Upload file with special characters in file name and verify system behavior
+- Upload multiple large files simultaneously and verify system stability
+- Perform rapid repeated uploads and verify no duplicate issues occur
+- Upload file under slow network conditions and verify system response
+- Retry failed upload and verify system handles retry correctly
 
 UPLOAD DOCUMENT - SECURITY
-- Attempt to upload malicious file and verify blocked
-- Verify unauthorized uploads are prevented
-- Verify file validation/scanning is enforced
+- Attempt to upload malicious file and verify it is blocked
+- Verify file content is validated or scanned before saving
+- Verify unauthorized users cannot upload files
+- Verify file upload does not expose system vulnerabilities
+- Verify sensitive data is not exposed through uploaded files
 
 UPLOAD DOCUMENT - E2E SCENARIO
-- Login
+- Login to the system
 - Navigate to upload section
-- Upload document
-- Verify successful save
+- Select valid document
+- Upload document successfully
+- Verify success message is displayed
 - Logout and login again
-- Verify document persists
+- Verify uploaded document persists in the system
 
 
 DOWNLOAD DOCUMENT - POSITIVE SCENARIOS
