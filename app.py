@@ -11,15 +11,24 @@ sections = re.split(
     content
 )
 
+# ✅ Initialize session state (IMPORTANT)
+if "search_box" not in st.session_state:
+    st.session_state.search_box = ""
+
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-query = st.text_input("Search or ask a QA question:", key="search_box")
+# ✅ Input uses session state
+query = st.text_input(
+    "Search or ask a QA question:",
+    value=st.session_state.search_box
+)
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
+# ✅ Clear Button (SAFE RESET)
 if st.button("Clear Search"):
-    st.session_state["search_box"] = ""
+    st.session_state.search_box = ""
     
 if query:
     query = query.lower().replace("-", " ")
