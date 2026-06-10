@@ -16,7 +16,6 @@ st.title("QA Assistant Chatbot 🤖")
 query = st.text_input("Search or ask a QA question:")
 
 if query:
-    # ✅ NORMALIZE QUERY (CRITICAL FIX)
     query = query.lower().replace("-", " ")
 
     st.write("### Suggested Test Scenarios")
@@ -35,79 +34,55 @@ if query:
 
     matched_module = None
 
-    # ✅ ✅ STRICT PRIORITY MATCHING (ORDER MATTERS)
-
+    # ✅ MODULE DETECTION (UNCHANGED)
     if "ui non functional" in query:
         matched_module = "ui non-functional"
-
     elif query.strip() in ["ui", "frontend"] or "ui " in query:
-        # ✅ prevent override by ui non-functional
         matched_module = "ui"
-
     elif "regression" in query:
         matched_module = "regression"
-
     elif "accessibility" in query:
         matched_module = "accessibility"
-
     elif "cross site scripting" in query or "xss" in query:
         matched_module = "cross site scripting"
-
     elif "data security" in query:
         matched_module = "data security"
-
     elif "api security" in query:
         matched_module = "api security"
-
     elif "checkout" in query or "payment" in query:
         matched_module = "checkout"
-
     elif "upload" in query:
         matched_module = "upload"
-
     elif "download" in query:
         matched_module = "download"
-
     elif "search" in query:
         matched_module = "search"
-
     elif "login" in query:
         matched_module = "login"
-
     elif "logout" in query:
         matched_module = "logout"
-
     elif "registration" in query:
         matched_module = "registration"
-
     elif "password" in query:
         matched_module = "password reset"
-
     elif "vehicle" in query:
         matched_module = "vehicle"
-
     elif "order" in query:
         matched_module = "order"
-
     elif "api" in query:
         matched_module = "api"
-
     elif "database" in query:
         matched_module = "database"
-
     elif "performance" in query:
         matched_module = "performance"
-
     elif "session" in query:
         matched_module = "session"
-
     elif "authentication" in query or "authorization" in query:
         matched_module = "authentication"
-
     elif "security" in query:
         matched_module = "security"
 
-    # ✅ MODULE MAP
+    # ✅ MODULE MAP (ORIGINAL)
     module_map = {
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non functional"],
@@ -140,23 +115,32 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-# ✅ PROCESS SECTIONS  (INDENTED ✅)
+    # ✅ ✅ SMART KEYWORD ADDITION (NEW)
+    keyword_map = {
+        "login": ["login", "sign in", "log in"],
+        "logout": ["logout", "sign out"],
+        "ui": ["frontend", "interface"],
+        "cross site scripting": ["xss"],
+        "checkout": ["payment", "transaction"],
+        "accessibility": ["a11y"]
+    }
+
     # ✅ PROCESS SECTIONS
     for section in sections:
         section_text = section.lower().replace("-", " ")
         title = section.strip().split("\n")[0].lower().replace("-", " ")
 
-        # ✅ SHOW ALL
         if "all" in query:
             results.append(section)
             continue
 
         if matched_module:
-            keywords = module_map.get(matched_module, [])
+            # ✅ COMBINE NORMAL + SMART KEYS
+            keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
 
             if any(word in title for word in keywords):
 
-                # ✅ FIX ONLY PROBLEM MODULES
+                # ✅ FIX ONLY THESE TWO
                 if matched_module == "accessibility" and "accessibility" not in title:
                     continue
 
@@ -169,7 +153,6 @@ if query:
                 else:
                     results.append(section)
 
-    # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
 
     # ✅ DISPLAY
@@ -185,4 +168,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: ui, ui non-functional, regression, xss")
+        st.write("No match found. Try: ui, login, xss, accessibility")
