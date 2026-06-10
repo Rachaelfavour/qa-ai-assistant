@@ -14,12 +14,13 @@ sections = re.split(
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-query = st.text_input("Search or ask a QA question:")
+query = st.text_input("Search or ask a QA question:", key="search_box")
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
 if st.button("Clear Search"):
-    st.session_state.clear()
+    st.session_state["search_box"] = ""
+    
 if query:
     query = query.lower().replace("-", " ")
 
