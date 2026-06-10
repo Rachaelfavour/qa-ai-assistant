@@ -155,11 +155,12 @@ if query:
             if not title.startswith(matched_module):
                 continue
 
-        if matched_module:
+       if matched_module:
     keywords = module_map.get(matched_module, [])
 
     if any(word in title for word in keywords):
 
+        # ✅ fix only these modules
         if matched_module == "accessibility" and "accessibility" not in title:
             continue
 
