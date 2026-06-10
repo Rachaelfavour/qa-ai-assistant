@@ -14,23 +14,19 @@ sections = re.split(
 # ✅ Initialize state
 if "clear_clicked" not in st.session_state:
     st.session_state.clear_clicked = False
-
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-# ✅ control input
-default_value = "" if st.session_state.clear_clicked else None
-
-query = st.text_input(
-    "Search or ask a QA question:",
-    value=default_value
-)
+# ✅ Controlled input
+query = st.text_input("Search or ask a QA question:", key="search_box")
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
-# ✅ Clear button
-if st.button("Clear Search"):
-    st.session_state.clear_clicked = True
+# ✅ ✅ Proper clear button (WORKS)
+if st.button("Clear Search", key="clear_btn"):
+    if "search_box" in st.session_state:
+        del st.session_state["search_box"]
+    st.rerun()
     st.rerun()
 
 # ✅ MAIN LOGIC
