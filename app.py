@@ -158,9 +158,16 @@ if query:
         if matched_module:
             keywords = module_map.get(matched_module, [])
 
-            if any(word in title for word in keywords) or any(word in section_text for word in keywords):
+            if any(word in title for word in keywords):
 
-                if filter_type:
+if matched_module == "accessibility":
+    if "accessibility" not in title:
+        continue
+if matched_module == "regression":
+    if "regression" not in title:
+        continue
+        
+        if filter_type:
                     if filter_type in title or filter_type in section_text:
                         results.append(section)
                 else:
