@@ -19,7 +19,7 @@ query = st.text_input("Search or ask a QA question:")
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
 if st.button("Clear Search"):
-    st.experimental_rerun()
+    st.session_state.clear()
 if query:
     query = query.lower().replace("-", " ")
 
