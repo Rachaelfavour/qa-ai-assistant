@@ -19,16 +19,12 @@ if "search_box" not in st.session_state:
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-query = st.text_input(
-    "Search or ask a QA question:",
-    key="search_box"
-)
+query = st.text_input("Search or ask a QA question:")
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
-# ✅ ✅ FIXED CLEAR BUTTON (ONLY ONE)
+# ✅ FINAL WORKING CLEAR BUTTON
 if st.button("Clear Search", key="clear_btn"):
-    st.session_state.search_box = ""
     st.rerun()
 
 # ✅ MAIN LOGIC
