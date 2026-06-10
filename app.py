@@ -32,7 +32,6 @@ st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibili
 if st.button("Clear Search"):
     st.session_state.search_box = ""
     st.rerun()
-)
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
