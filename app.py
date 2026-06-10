@@ -29,10 +29,6 @@ if st.button("Clear Search", key="clear_btn"):
         del st.session_state["search_box"]
     st.rerun()
 
-# ✅ reset flag AFTER rerun
-if st.session_state.clear_flag:
-    st.session_state.clear_flag = False
-
 # ✅ MAIN LOGIC
 if query:
     query = query.lower().replace("-", " ")
