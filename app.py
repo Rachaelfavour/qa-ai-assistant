@@ -149,9 +149,9 @@ for section in sections:
         continue
 
     # ✅ FIX (SAFE VERSION)
-    if matched_module and matched_module in ["accessibility", "regression", "database"]:
-        if not title.startswith(matched_module):
-            continue
+    # if matched_module and matched_module in ["accessibility", "regression", "database"]:
+    #     if not title.startswith(matched_module):
+    #         continue
 
     if matched_module:
         keywords = module_map.get(matched_module, [])
