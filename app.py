@@ -140,29 +140,20 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-# ✅ PROCESS SECTIONS
 for section in sections:
     section_text = section.lower().replace("-", " ")
     title = section.strip().split("\n")[0].lower().replace("-", " ")
 
-    # ✅ ✅ PLACE FIX HERE (INSIDE LOOP ✅)
-
-    if matched_module == "accessibility" and not title.startswith("accessibility"):
-        continue
-
-    if matched_module == "regression" and not title.startswith("regression"):
-        continue
-
-    if matched_module == "database" and not title.startswith("database"):
-        continue
-
-    # ✅ SHOW ALL
     if "all" in query:
         results.append(section)
         continue
 
-    if matched_module:
+    # ✅ FIX (SAFE VERSION)
+    if matched_module and matched_module in ["accessibility", "regression", "database"]:
+        if not title.startswith(matched_module):
+            continue
 
+    if matched_module:
         keywords = module_map.get(matched_module, [])
 
         if any(word in title for word in keywords) or any(word in section_text for word in keywords):
