@@ -11,25 +11,22 @@ sections = re.split(
     content
 )
 
-# ✅ reset flag
-if "clear_flag" not in st.session_state:
-    st.session_state.clear_flag = False
+# ✅ Initialize state (you can actually keep or remove this, it’s harmless)
+if "clear_clicked" not in st.session_state:
+    st.session_state.clear_clicked = False
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-# ✅ controlled reset
-query = st.text_input(
-    "Search or ask a QA question:",
-    key="search_box",
-    value="" if st.session_state.clear_flag else st.session_state.get("search_box", "")
-)
+# ✅ Controlled input
+query = st.text_input("Search or ask a QA question:", key="search_box")
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
-# ✅ clear button
+# ✅ ✅ CLEAN CLEAR BUTTON (FINAL)
 if st.button("Clear Search", key="clear_btn"):
-    st.session_state.clear_flag = True
+    if "search_box" in st.session_state:
+        del st.session_state["search_box"]
     st.rerun()
 
 # ✅ reset flag AFTER rerun
