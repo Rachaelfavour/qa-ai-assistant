@@ -15,10 +15,11 @@ st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
 query = st.text_input("Search or ask a QA question:")
+
+st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
+
 if st.button("Clear Search"):
     st.experimental_rerun()
-
-
 if query:
     query = query.lower().replace("-", " ")
 
@@ -173,4 +174,4 @@ if query:
             "qa_test_scenarios.txt"
         )
     else:
-        st.write("No match found. Try: ui, login, xss, accessibility")
+        st.warning("No results found. Try using different keywords or select a module.")
