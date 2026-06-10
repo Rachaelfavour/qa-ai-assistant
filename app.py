@@ -144,6 +144,17 @@ if query:
     for section in sections:
         section_text = section.lower().replace("-", " ")
         title = section.strip().split("\n")[0].lower().replace("-", " ")
+       
+# ✅ FIX (ADD THIS BLOCK ONLY)
+
+if matched_module == "accessibility" and not title.startswith("accessibility"):
+    continue
+
+if matched_module == "regression" and not title.startswith("regression"):
+    continue
+
+if matched_module == "database" and not title.startswith("database"):
+    continue
 
         # ✅ SHOW ALL
         if "all" in query:
@@ -155,7 +166,7 @@ if query:
             keywords = module_map.get(matched_module, [])
 
             # ✅ STRICT TITLE MATCH ONLY (REMOVED WRONG FALLBACKS)
-            if any(word in title for word in keywords):
+            if any(word in title for word in keywords) or any(word in section_text for word in keywords):
 
                 if filter_type:
                     if filter_type in title or filter_type in section_text:
