@@ -12,8 +12,12 @@ sections = re.split(
 )
 
 st.title("QA Assistant Chatbot 🤖")
+st.write("Search or select a module to view QA test scenarios.")
 
 query = st.text_input("Search or ask a QA question:")
+if st.button("Clear Search"):
+    st.experimental_rerun()
+
 
 if query:
     query = query.lower().replace("-", " ")
@@ -156,9 +160,10 @@ if query:
     results = list(dict.fromkeys(results))
 
     # ✅ DISPLAY
+    st.write(f"✅ {len(results)} results found")
     if results:
         for sec in results:
-            st.text(sec)
+            st.code(sec)
             st.write("---")
             download_text += sec + "\n\n"
 
