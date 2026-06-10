@@ -140,34 +140,36 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-for section in sections:
-    section_text = section.lower().replace("-", " ")
-    title = section.strip().split("\n")[0].lower().replace("-", " ")
+# ✅ PROCESS SECTIONS  (INDENTED ✅)
+    for section in sections:
+        section_text = section.lower().replace("-", " ")
+        title = section.strip().split("\n")[0].lower().replace("-", " ")
 
-    if "all" in query:
-        results.append(section)
-        continue
+        # ✅ SHOW ALL
+        if "all" in query:
+            results.append(section)
+            continue
 
-    # ✅ FIX (SAFE VERSION)
-    # if matched_module and matched_module in ["accessibility", "regression", "database"]:
-    #     if not title.startswith(matched_module):
-    #         continue
+        # ✅ FIX
+        if matched_module and matched_module in ["accessibility", "regression", "database"]:
+            if not title.startswith(matched_module):
+                continue
 
-    if matched_module:
-        keywords = module_map.get(matched_module, [])
+        if matched_module:
+            keywords = module_map.get(matched_module, [])
 
-        if any(word in title for word in keywords) or any(word in section_text for word in keywords):
+            if any(word in title for word in keywords) or any(word in section_text for word in keywords):
 
-            if filter_type:
-                if filter_type in title or filter_type in section_text:
+                if filter_type:
+                    if filter_type in title or filter_type in section_text:
+                        results.append(section)
+                else:
                     results.append(section)
-            else:
-                results.append(section)
 
-    # ✅ REMOVE DUPLICATES
+    # ✅ REMOVE DUPLICATES (OUTSIDE LOOP ✅)
     results = list(dict.fromkeys(results))
 
-    # ✅ DISPLAY
+    # ✅ DISPLAY (OUTSIDE LOOP ✅)
     if results:
         for sec in results:
             st.text(sec)
