@@ -11,16 +11,14 @@ sections = re.split(
     content
 )
 
-import streamlit as st
-
-# ✅ Initialize state
+# ✅ Initialize session state
 if "search_box" not in st.session_state:
     st.session_state.search_box = ""
 
+# ✅ UI
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-# ✅ Input tied to session state
 query = st.text_input(
     "Search or ask a QA question:",
     key="search_box"
@@ -28,17 +26,12 @@ query = st.text_input(
 
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
-# ✅ ✅ FIX: Clear + rerun properly
-if st.button("Clear Search"):
+# ✅ ✅ FIXED CLEAR BUTTON (ONLY ONE)
+if st.button("Clear Search", key="clear_btn"):
     st.session_state.search_box = ""
     st.rerun()
 
-st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
-
-# ✅ Clear Button (SAFE RESET)
-if st.button("Clear Search"):
-    st.session_state.search_box = ""
-    
+# ✅ MAIN LOGIC
 if query:
     query = query.lower().replace("-", " ")
 
@@ -58,7 +51,7 @@ if query:
 
     matched_module = None
 
-    # ✅ MODULE DETECTION (UNCHANGED)
+    # ✅ MODULE DETECTION
     if "ui non functional" in query:
         matched_module = "ui non-functional"
     elif query.strip() in ["ui", "frontend"] or "ui " in query:
@@ -106,32 +99,26 @@ if query:
     elif "security" in query:
         matched_module = "security"
 
-    # ✅ MODULE MAP (ORIGINAL)
+    # ✅ MODULE MAP
     module_map = {
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non functional"],
         "regression": ["regression"],
         "accessibility": ["accessibility"],
-
         "cross site scripting": ["cross site scripting", "xss"],
-
         "login": ["login"],
         "logout": ["logout"],
         "password reset": ["password"],
         "registration": ["registration"],
         "search": ["search"],
-
         "upload": ["upload"],
         "download": ["download"],
-
         "vehicle": ["vehicle"],
         "order": ["order"],
         "checkout": ["checkout", "payment"],
         "api": ["api"],
-
         "performance": ["performance"],
         "database": ["database"],
-
         "security": ["security"],
         "data security": ["data security"],
         "api security": ["api security"],
@@ -139,7 +126,7 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-    # ✅ ✅ SMART KEYWORD ADDITION (NEW)
+    # ✅ SMART KEYWORDS
     keyword_map = {
         "login": ["login", "sign in", "log in"],
         "logout": ["logout", "sign out"],
@@ -159,12 +146,11 @@ if query:
             continue
 
         if matched_module:
-            # ✅ COMBINE NORMAL + SMART KEYS
             keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
 
             if any(word in title for word in keywords):
 
-                # ✅ FIX ONLY THESE TWO
+                # ✅ FIX SPECIAL MODULES
                 if matched_module == "accessibility" and "accessibility" not in title:
                     continue
 
@@ -181,6 +167,7 @@ if query:
 
     # ✅ DISPLAY
     st.write(f"✅ {len(results)} results found")
+
     if results:
         for sec in results:
             st.code(sec)
