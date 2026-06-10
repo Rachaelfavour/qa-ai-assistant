@@ -160,7 +160,6 @@ if query:
 
     if any(word in title for word in keywords):
 
-        # ✅ FIX
         if matched_module == "accessibility" and "accessibility" not in title:
             continue
 
