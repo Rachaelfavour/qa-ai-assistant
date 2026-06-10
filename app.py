@@ -145,7 +145,8 @@ for section in sections:
     section_text = section.lower().replace("-", " ")
     title = section.strip().split("\n")[0].lower().replace("-", " ")
 
-    # ✅ FIX (INSIDE LOOP ✅)
+    # ✅ ✅ PLACE FIX HERE (INSIDE LOOP ✅)
+
     if matched_module == "accessibility" and not title.startswith("accessibility"):
         continue
 
