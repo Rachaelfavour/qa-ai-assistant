@@ -140,39 +140,37 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-    # ✅ PROCESS SECTIONS
-    for section in sections:
-        section_text = section.lower().replace("-", " ")
-        title = section.strip().split("\n")[0].lower().replace("-", " ")
-       
-# ✅ FIX (ADD THIS BLOCK ONLY)
+# ✅ PROCESS SECTIONS
+for section in sections:
+    section_text = section.lower().replace("-", " ")
+    title = section.strip().split("\n")[0].lower().replace("-", " ")
 
-if matched_module == "accessibility" and not title.startswith("accessibility"):
-    continue
+    # ✅ FIX (INSIDE LOOP ✅)
+    if matched_module == "accessibility" and not title.startswith("accessibility"):
+        continue
 
-if matched_module == "regression" and not title.startswith("regression"):
-    continue
+    if matched_module == "regression" and not title.startswith("regression"):
+        continue
 
-if matched_module == "database" and not title.startswith("database"):
-    continue
+    if matched_module == "database" and not title.startswith("database"):
+        continue
 
-        # ✅ SHOW ALL
-        if "all" in query:
-            results.append(section)
-            continue
+    # ✅ SHOW ALL
+    if "all" in query:
+        results.append(section)
+        continue
 
-        if matched_module:
+    if matched_module:
 
-            keywords = module_map.get(matched_module, [])
+        keywords = module_map.get(matched_module, [])
 
-            # ✅ STRICT TITLE MATCH ONLY (REMOVED WRONG FALLBACKS)
-            if any(word in title for word in keywords) or any(word in section_text for word in keywords):
+        if any(word in title for word in keywords) or any(word in section_text for word in keywords):
 
-                if filter_type:
-                    if filter_type in title or filter_type in section_text:
-                        results.append(section)
-                else:
+            if filter_type:
+                if filter_type in title or filter_type in section_text:
                     results.append(section)
+            else:
+                results.append(section)
 
     # ✅ REMOVE DUPLICATES
     results = list(dict.fromkeys(results))
