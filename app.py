@@ -207,7 +207,6 @@ if st.button("Generate Test Cases with AI"):
         st.warning("Please describe a feature first.")
     else:
         with st.spinner("Generating test cases..."):
-            if ac_format == "Given/When/Then (Gherkin)":
             system_prompt = "You are a senior QA engineer. You MUST generate EXACTLY 10 Positive scenarios, EXACTLY 10 Negative scenarios, and EXACTLY 10 Edge Case scenarios. That is 30 scenarios total, no fewer. This is a strict requirement, not a suggestion. Count your bullets before finishing. If you have fewer than 10 in any category, add more before stopping. Format your output EXACTLY like this: MODULE NAME - POSITIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - NEGATIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - EDGE CASES then 10 lines each starting with a dash. Replace MODULE NAME with the feature name. Each bullet must be a distinct, specific, realistic scenario, no duplicates, no filler. Start each with Verify where natural."
             user_prompt = f"Generate exactly 30 QA test scenarios (10 positive, 10 negative, 10 edge cases) for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
@@ -279,9 +278,9 @@ if st.button("Generate Acceptance Criteria"):
     else:
         with st.spinner("Generating acceptance criteria..."):
             if ac_format == "Given/When/Then (Gherkin)":
-            system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). You MUST produce EXACTLY 6 scenarios, no fewer - covering the main happy path, validation/error cases, and edge cases. Count your scenarios before finishing; if you have fewer than 6, add more. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."  
+                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). You MUST produce EXACTLY 6 scenarios, no fewer - covering the main happy path, validation and error cases, and edge cases. Count your scenarios before finishing; if you have fewer than 6, add more. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."
             else:
-                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria as a simple checklist. Each line should be a single, testable, unambiguous criterion starting with 'The system should...' or 'The user can...'. Produce at least 5 checklist items covering the main happy path, validation, and key edge cases."
+                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria as a simple checklist. You MUST produce EXACTLY 10 checklist items, no fewer, covering the main happy path, validation, and edge cases. Count your items before finishing; if you have fewer than 10, add more. Each line should be a single, testable, unambiguous criterion starting with 'The system should...' or 'The user can...'."
             user_prompt = f"Write acceptance criteria for this requirement:\n\n{ac_requirement_text}"
             ac_output = call_openai(system_prompt, user_prompt)
 
