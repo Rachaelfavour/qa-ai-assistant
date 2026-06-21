@@ -335,7 +335,7 @@ if "ac_output" in st.session_state:
         st.session_state["ac_output"],
         "acceptance_criteria.txt"
     )
-    feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
+   feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
 
 # ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
