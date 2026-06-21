@@ -342,7 +342,7 @@ if "ac_output" in st.session_state:
 # ============================================
 st.write("---")
 st.write("## 📊 Export Test Cases to Excel")
-st.write("Paste any test scenario text (e.g. from the AI generator above). AI will fill in real Steps and Expected Results for each one, then export to Excel.")
+st.write("Paste any test scenario text (e.g. from the AI generator above). AI will fill in real Steps, Test Data, and Expected Results for each one, then export to Excel.")
 
 export_text = st.text_area(
     "Paste test scenarios to export:",
@@ -353,17 +353,19 @@ if st.button("Convert to Excel"):
     if not export_text.strip():
         st.warning("Please paste some test scenarios first.")
     else:
-        with st.spinner("Generating detailed steps and expected results..."):
+        with st.spinner("Generating detailed steps, test data and expected results..."):
             system_prompt = (
                 "You are a senior QA engineer with deep test coverage expertise. You will be given "
                 "a block of test scenario text, organized under headers like 'MODULE NAME - CATEGORY' "
                 "followed by '-' bulleted scenarios. "
                 "For each individual bullet scenario, produce a structured, high-quality test case. "
-                "Write specific, actionable steps - use concrete field names, button labels, sample "
-                "values, and exact user actions instead of vague descriptions like 'perform the action'. "
+                "Write specific, actionable steps - use concrete field names, button labels, and "
+                "exact user actions instead of vague descriptions like 'perform the action'. "
                 "Each test case should typically have between 3 and 7 steps depending on what the "
                 "scenario actually requires - never pad with filler steps, but never skip steps needed "
                 "for someone unfamiliar with the feature to execute the test precisely. "
+                "Separately, identify the specific input values used in the test (e.g. sample prices, "
+                "usernames, file types, dates) as 'test_data' - if no specific data applies, use 'N/A'. "
                 "Additionally, for each module/category group, add 1-2 extra test cases beyond what was "
                 "listed if you identify an important coverage gap (e.g. a missing boundary condition, "
                 "a missing negative case, or a missing edge case), and mark these with "
@@ -374,6 +376,7 @@ if st.button("Convert to Excel"):
                 "\"category\" (the category from the header, e.g. Positive/Negative/Edge Case), "
                 "\"test_scenario\" (the original bullet text, or '[AI-added] ...' for new ones), "
                 "\"steps\" (a single string with numbered steps separated by newlines, specific and actionable), "
+                "\"test_data\" (a single string with the specific input values used, or 'N/A'), "
                 "\"expected_result\" (a single string describing the specific, measurable expected outcome)."
             )
             user_prompt = f"Convert this into structured test cases:\n\n{export_text}"
@@ -393,8 +396,11 @@ if st.button("Convert to Excel"):
                 "category": "Category",
                 "test_scenario": "Test Scenario",
                 "steps": "Steps",
+                "test_data": "Test Data",
                 "expected_result": "Expected Result"
             })
+            df["Actual Result"] = ""
+            df["Status"] = ""
             st.session_state["excel_df"] = df
         except json.JSONDecodeError:
             st.session_state["excel_df"] = None
