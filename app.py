@@ -208,7 +208,8 @@ if st.button("Generate Test Cases with AI"):
     else:
         with st.spinner("Generating test cases..."):
             system_prompt = (
-                "You are a senior QA engineer. Generate test scenarios in this exact style:\n"
+                "You are a senior QA engineer focused on thorough test coverage. Generate test "
+                "scenarios in this exact style:\n"
                 "MODULE NAME - POSITIVE SCENARIOS\n"
                 "- scenario one\n"
                 "- scenario two\n\n"
@@ -216,8 +217,10 @@ if st.button("Generate Test Cases with AI"):
                 "- scenario one\n\n"
                 "MODULE NAME - EDGE CASES\n"
                 "- scenario one\n\n"
-                "Keep each bullet concise, starting with 'Verify' where natural. "
-                "Use the feature name in place of MODULE NAME."
+                "Aim for at least 4-5 scenarios per category (Positive, Negative, Edge Cases) to "
+                "ensure thorough coverage, including boundary values, validation failures, and "
+                "unusual but realistic user behavior. Keep each bullet concise but specific, "
+                "starting with 'Verify' where natural. Use the feature name in place of MODULE NAME."
             )
             user_prompt = f"Generate QA test scenarios for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
@@ -322,6 +325,7 @@ if st.button("Generate Acceptance Criteria"):
 
         st.session_state["ac_output"] = ac_output
         st.session_state["ac_requirement"] = ac_requirement_text
+
 if "ac_output" in st.session_state:
     st.write("### Generated Acceptance Criteria")
     formatted_output = st.session_state["ac_output"].replace("\nGiven", "  \nGiven").replace("\nWhen", "  \nWhen").replace("\nThen", "  \nThen").replace("\nAnd", "  \nAnd")
@@ -350,8 +354,7 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps and expected results..."):
-      
-                system_prompt = (
+            system_prompt = (
                 "You are a senior QA engineer with deep test coverage expertise. You will be given "
                 "a block of test scenario text, organized under headers like 'MODULE NAME - CATEGORY' "
                 "followed by '-' bulleted scenarios. "
