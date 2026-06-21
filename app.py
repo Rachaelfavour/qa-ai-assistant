@@ -1,44 +1,37 @@
 import streamlit as st
 import re
+from ai_helper import call_openai
 
 # Load data
 with open("qa_data.txt", "r") as f:
     content = f.read()
 
-# ✅ SPLIT SECTIONS
+# SPLIT SECTIONS
 sections = re.split(
     r"\n(?=[A-Z \-]+ -|===|[A-Z \-]+ SCENARIOS|SQL INJECTION|CROSS-SITE SCRIPTING|SESSION HIJACKING|AUTHENTICATION & AUTHORIZATION|SESSION MANAGEMENT|DATA SECURITY|API SECURITY)",
     content
 )
 
-# ✅ Initialize state (you can actually keep or remove this, it’s harmless)
 if "clear_clicked" not in st.session_state:
     st.session_state.clear_clicked = False
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-# ✅ Controlled input
 query = st.text_input("Search or ask a QA question:", key="search_box")
-
 st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
 
-# ✅ ✅ CLEAN CLEAR BUTTON (FINAL)
 if st.button("Clear Search", key="clear_btn"):
     if "search_box" in st.session_state:
         del st.session_state["search_box"]
     st.rerun()
 
-# ✅ MAIN LOGIC
 if query:
     query = query.lower().replace("-", " ")
-
     st.write("### Suggested Test Scenarios")
-
     results = []
     download_text = ""
 
-    # ✅ FILTER TYPE
     filter_type = None
     if "positive" in query:
         filter_type = "positive"
@@ -49,7 +42,6 @@ if query:
 
     matched_module = None
 
-    # ✅ MODULE DETECTION
     if "ui non functional" in query:
         matched_module = "ui non-functional"
     elif query.strip() in ["ui", "frontend"] or "ui " in query:
@@ -97,7 +89,6 @@ if query:
     elif "security" in query:
         matched_module = "security"
 
-    # ✅ MODULE MAP
     module_map = {
         "ui": ["ui", "frontend"],
         "ui non-functional": ["ui non functional"],
@@ -124,7 +115,6 @@ if query:
         "authentication": ["authentication", "authorization"]
     }
 
-    # ✅ SMART KEYWORDS
     keyword_map = {
         "login": ["login", "sign in", "log in"],
         "logout": ["logout", "sign out"],
@@ -134,7 +124,6 @@ if query:
         "accessibility": ["a11y"]
     }
 
-    # ✅ PROCESS SECTIONS
     for section in sections:
         section_text = section.lower().replace("-", " ")
         title = section.strip().split("\n")[0].lower().replace("-", " ")
@@ -145,16 +134,11 @@ if query:
 
         if matched_module:
             keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
-
             if any(word in title for word in keywords):
-
-                # ✅ FIX SPECIAL MODULES
                 if matched_module == "accessibility" and "accessibility" not in title:
                     continue
-
                 if matched_module == "regression" and "regression" not in title:
                     continue
-
                 if filter_type:
                     if filter_type in title or filter_type in section_text:
                         results.append(section)
@@ -163,7 +147,6 @@ if query:
 
     results = list(dict.fromkeys(results))
 
-    # ✅ DISPLAY
     st.write(f"✅ {len(results)} results found")
 
     if results:
@@ -179,3 +162,43 @@ if query:
         )
     else:
         st.warning("No results found. Try using different keywords or select a module.")
+
+# ============================================
+# AI TEST CASE GENERATION
+# ============================================
+st.write("---")
+st.write("## 🤖 AI Test Case Generator")
+st.write("Describe a feature and get fresh AI-generated test scenarios in the same style as above.")
+
+feature_description = st.text_area(
+    "Describe the feature to test:",
+    placeholder="e.g. User can apply a discount code at checkout"
+)
+
+if st.button("Generate Test Cases with AI"):
+    if not feature_description.strip():
+        st.warning("Please describe a feature first.")
+    else:
+        with st.spinner("Generating test cases..."):
+            system_prompt = (
+                "You are a senior QA engineer. Generate test scenarios in this exact style:\n"
+                "MODULE NAME - POSITIVE SCENARIOS\n"
+                "- scenario one\n"
+                "- scenario two\n\n"
+                "MODULE NAME - NEGATIVE SCENARIOS\n"
+                "- scenario one\n\n"
+                "MODULE NAME - EDGE CASES\n"
+                "- scenario one\n\n"
+                "Keep each bullet concise, starting with 'Verify' where natural. "
+                "Use the feature name in place of MODULE NAME."
+            )
+            user_prompt = f"Generate QA test scenarios for this feature: {feature_description}"
+            ai_output = call_openai(system_prompt, user_prompt)
+
+        st.write("### Generated Test Scenarios")
+        st.code(ai_output)
+        st.download_button(
+            "⬇️ Download AI Test Scenarios",
+            ai_output,
+            "ai_generated_test_scenarios.txt"
+        )
