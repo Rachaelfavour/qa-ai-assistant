@@ -274,6 +274,66 @@ if "ra_output" in st.session_state:
     feedback_buttons("Requirement Analysis", st.session_state.get("ra_requirement", ""), key_suffix="ra")
 
 # ============================================
+# AI ACCEPTANCE CRITERIA GENERATOR
+# ============================================
+st.write("---")
+st.write("## ✅ Generate Acceptance Criteria")
+st.write("Paste a requirement or user story. AI will generate clear acceptance criteria in your chosen format.")
+
+ac_requirement_text = st.text_area(
+    "Paste your requirement or user story:",
+    placeholder="e.g. As a user, I want to reset my password so I can log back in.",
+    key="ac_input"
+)
+
+ac_format = st.radio(
+    "Choose format:",
+    ["Given/When/Then (Gherkin)", "Simple Checklist"],
+    horizontal=True
+)
+
+if st.button("Generate Acceptance Criteria"):
+    if not ac_requirement_text.strip():
+        st.warning("Please paste a requirement first.")
+    else:
+        with st.spinner("Generating acceptance criteria..."):
+            if ac_format == "Given/When/Then (Gherkin)":
+                system_prompt = (
+                    "You are a senior business analyst. Given a requirement or user story, "
+                    "write clear acceptance criteria in Gherkin format (Given/When/Then). "
+                    "Produce at least 3 scenarios covering the main happy path and key variations. "
+                    "Format each scenario as:\n"
+                    "Scenario: <short title>\n"
+                    "Given <context>\n"
+                    "When <action>\n"
+                    "Then <expected outcome>\n\n"
+                    "Separate scenarios with a blank line."
+                )
+            else:
+                system_prompt = (
+                    "You are a senior business analyst. Given a requirement or user story, "
+                    "write clear acceptance criteria as a simple checklist. "
+                    "Each line should be a single, testable, unambiguous criterion starting with "
+                    "'The system should...' or 'The user can...'. "
+                    "Produce at least 5 checklist items covering the main happy path, validation, and key edge cases."
+                )
+            user_prompt = f"Write acceptance criteria for this requirement:\n\n{ac_requirement_text}"
+            ac_output = call_openai(system_prompt, user_prompt)
+
+        st.session_state["ac_output"] = ac_output
+        st.session_state["ac_requirement"] = ac_requirement_text
+
+if "ac_output" in st.session_state:
+    st.write("### Generated Acceptance Criteria")
+    st.write(st.session_state["ac_output"])
+    st.download_button(
+        "⬇️ Download Acceptance Criteria",
+        st.session_state["ac_output"],
+        "acceptance_criteria.txt"
+    )
+    feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
+
+# ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
 # ============================================
 st.write("---")
