@@ -3,6 +3,7 @@ import re
 import json
 import pandas as pd
 import io
+import datetime
 from ai_helper import call_openai
 
 # Load data
@@ -17,6 +18,29 @@ sections = re.split(
 
 if "clear_clicked" not in st.session_state:
     st.session_state.clear_clicked = False
+
+if "feedback_log" not in st.session_state:
+    st.session_state.feedback_log = []
+
+def log_feedback(feature_name, rating, context=""):
+    st.session_state.feedback_log.append({
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "feature": feature_name,
+        "rating": rating,
+        "context": context[:100]
+    })
+
+def feedback_buttons(feature_name, context="", key_suffix=""):
+    st.write("Was this helpful?")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("👍 Yes", key=f"up_{key_suffix}"):
+            log_feedback(feature_name, "up", context)
+            st.success("Thanks for the feedback!")
+    with col2:
+        if st.button("👎 No", key=f"down_{key_suffix}"):
+            log_feedback(feature_name, "down", context)
+            st.info("Thanks — noted for improvement.")
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
@@ -198,13 +222,18 @@ if st.button("Generate Test Cases with AI"):
             user_prompt = f"Generate QA test scenarios for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
 
-        st.write("### Generated Test Scenarios")
-        st.code(ai_output)
-        st.download_button(
-            "⬇️ Download AI Test Scenarios",
-            ai_output,
-            "ai_generated_test_scenarios.txt"
-        )
+        st.session_state["tc_output"] = ai_output
+        st.session_state["tc_feature"] = feature_description
+
+if "tc_output" in st.session_state:
+    st.write("### Generated Test Scenarios")
+    st.code(st.session_state["tc_output"])
+    st.download_button(
+        "⬇️ Download AI Test Scenarios",
+        st.session_state["tc_output"],
+        "ai_generated_test_scenarios.txt"
+    )
+    feedback_buttons("Test Case Generator", st.session_state.get("tc_feature", ""), key_suffix="tc")
 
 # ============================================
 # AI REQUIREMENT ANALYSIS ("CHALLENGE MY REQUIREMENT")
@@ -236,8 +265,13 @@ if st.button("Challenge This Requirement"):
             user_prompt = f"Challenge this requirement:\n\n{requirement_text}"
             analysis_output = call_openai(system_prompt, user_prompt)
 
-        st.write("### Requirement Analysis")
-        st.write(analysis_output)
+        st.session_state["ra_output"] = analysis_output
+        st.session_state["ra_requirement"] = requirement_text
+
+if "ra_output" in st.session_state:
+    st.write("### Requirement Analysis")
+    st.write(st.session_state["ra_output"])
+    feedback_buttons("Requirement Analysis", st.session_state.get("ra_requirement", ""), key_suffix="ra")
 
 # ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
@@ -286,21 +320,39 @@ if st.button("Convert to Excel"):
                 "steps": "Steps",
                 "expected_result": "Expected Result"
             })
-
-            st.write("### Preview")
-            st.dataframe(df, use_container_width=True)
-
-            buffer = io.BytesIO()
-            df.to_excel(buffer, index=False, sheet_name="Test Cases")
-            buffer.seek(0)
-
-            st.download_button(
-                "⬇️ Download Excel File",
-                buffer,
-                "test_cases.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
+            st.session_state["excel_df"] = df
         except json.JSONDecodeError:
-            st.warning("AI response couldn't be parsed into a table. Raw response below:")
-            st.code(ai_output)
+            st.session_state["excel_df"] = None
+            st.session_state["excel_raw"] = ai_output
+
+if st.session_state.get("excel_df") is not None:
+    df = st.session_state["excel_df"]
+    st.write("### Preview")
+    st.dataframe(df, use_container_width=True)
+
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name="Test Cases")
+    buffer.seek(0)
+
+    st.download_button(
+        "⬇️ Download Excel File",
+        buffer,
+        "test_cases.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    feedback_buttons("Excel Export", key_suffix="excel")
+elif "excel_raw" in st.session_state:
+    st.warning("AI response couldn't be parsed into a table. Raw response below:")
+    st.code(st.session_state["excel_raw"])
+
+# ============================================
+# FEEDBACK SUMMARY (ADMIN VIEW)
+# ============================================
+if st.session_state.feedback_log:
+    st.write("---")
+    with st.expander("📋 View Feedback Log (for demo/admin purposes)"):
+        feedback_df = pd.DataFrame(st.session_state.feedback_log)
+        st.dataframe(feedback_df, use_container_width=True)
+        st.write(f"Total feedback collected: {len(st.session_state.feedback_log)}")
+        st.write(f"👍 Positive: {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'up')}")
+        st.write(f"👎 Negative: {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'down')}")
