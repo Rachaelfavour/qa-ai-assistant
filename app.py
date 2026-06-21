@@ -322,10 +322,10 @@ if st.button("Generate Acceptance Criteria"):
 
         st.session_state["ac_output"] = ac_output
         st.session_state["ac_requirement"] = ac_requirement_text
-
 if "ac_output" in st.session_state:
     st.write("### Generated Acceptance Criteria")
-    st.write(st.session_state["ac_output"])
+    formatted_output = st.session_state["ac_output"].replace("\nGiven", "  \nGiven").replace("\nWhen", "  \nWhen").replace("\nThen", "  \nThen").replace("\nAnd", "  \nAnd")
+    st.markdown(formatted_output)
     st.download_button(
         "⬇️ Download Acceptance Criteria",
         st.session_state["ac_output"],
