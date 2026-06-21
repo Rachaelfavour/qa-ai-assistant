@@ -202,3 +202,36 @@ if st.button("Generate Test Cases with AI"):
             ai_output,
             "ai_generated_test_scenarios.txt"
         )
+        # ============================================
+# AI REQUIREMENT ANALYSIS ("CHALLENGE MY REQUIREMENT")
+# ============================================
+st.write("---")
+st.write("## 🧠 Challenge My Requirement")
+st.write("Paste a requirement or user story. AI will critique it for ambiguity, missing acceptance criteria, and untestable language.")
+
+requirement_text = st.text_area(
+    "Paste your requirement or user story:",
+    placeholder="e.g. As a user, I want to reset my password so I can log back in."
+)
+
+if st.button("Challenge This Requirement"):
+    if not requirement_text.strip():
+        st.warning("Please paste a requirement first.")
+    else:
+        with st.spinner("Analyzing requirement..."):
+            system_prompt = (
+                "You are a senior QA engineer reviewing a requirement or user story "
+                "before it goes into development. Critique it constructively. Cover:\n"
+                "1. Ambiguity - any vague or unclear wording\n"
+                "2. Missing acceptance criteria - what's not defined\n"
+                "3. Untestable language - words that can't be verified objectively\n"
+                "4. Edge cases not covered - what scenarios are missing\n"
+                "Format your response with clear headers for each section above. "
+                "Be specific and constructive, not just critical."
+            )
+            
+            user_prompt = f"Challenge this requirement:\n\n{requirement_text}"
+            analysis_output = call_openai(system_prompt, user_prompt)
+
+        st.write("### Requirement Analysis")
+        st.write(analysis_output)
