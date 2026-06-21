@@ -208,21 +208,38 @@ if st.button("Generate Test Cases with AI"):
     else:
         with st.spinner("Generating test cases..."):
             system_prompt = (
-                "You are a senior QA engineer focused on thorough test coverage. Generate test "
-                "scenarios in this exact style:\n"
+                "You are a senior QA engineer. You MUST generate EXACTLY 5 Positive scenarios, "
+                "EXACTLY 5 Negative scenarios, and EXACTLY 5 Edge Case scenarios. That is 15 "
+                "scenarios total, no fewer. This is a strict requirement, not a suggestion. "
+                "Count your bullets before finishing. If you have fewer than 5 in any category, "
+                "add more before stopping.\n\n"
+                "Format your output EXACTLY like this:\n"
                 "MODULE NAME - POSITIVE SCENARIOS\n"
-                "- scenario one\n"
-                "- scenario two\n\n"
+                "- scenario 1\n"
+                "- scenario 2\n"
+                "- scenario 3\n"
+                "- scenario 4\n"
+                "- scenario 5\n\n"
                 "MODULE NAME - NEGATIVE SCENARIOS\n"
-                "- scenario one\n\n"
+                "- scenario 1\n"
+                "- scenario 2\n"
+                "- scenario 3\n"
+                "- scenario 4\n"
+                "- scenario 5\n\n"
                 "MODULE NAME - EDGE CASES\n"
-                "- scenario one\n\n"
-                "Aim for at least 4-5 scenarios per category (Positive, Negative, Edge Cases) to "
-                "ensure thorough coverage, including boundary values, validation failures, and "
-                "unusual but realistic user behavior. Keep each bullet concise but specific, "
-                "starting with 'Verify' where natural. Use the feature name in place of MODULE NAME."
+                "- scenario 1\n"
+                "- scenario 2\n"
+                "- scenario 3\n"
+                "- scenario 4\n"
+                "- scenario 5\n\n"
+                "Replace MODULE NAME with the feature name. Each bullet must be a distinct, "
+                "specific, realistic scenario - no duplicates, no filler. Start each with 'Verify' "
+                "where natural."
             )
-            user_prompt = f"Generate QA test scenarios for this feature: {feature_description}"
+            user_prompt = (
+                f"Generate exactly 15 QA test scenarios (5 positive, 5 negative, 5 edge cases) "
+                f"for this feature: {feature_description}"
+            )
             ai_output = call_openai(system_prompt, user_prompt)
 
         st.session_state["tc_output"] = ai_output
@@ -335,7 +352,7 @@ if "ac_output" in st.session_state:
         st.session_state["ac_output"],
         "acceptance_criteria.txt"
     )
-feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
+    feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
 
 # ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
@@ -355,31 +372,25 @@ if st.button("Convert to Excel"):
     else:
         with st.spinner("Generating detailed steps, test data and expected results..."):
             system_prompt = (
-                "You are a senior QA engineer with deep test coverage expertise. You will be given "
-                "a block of test scenario text, organized under headers like 'MODULE NAME - CATEGORY' "
-                "followed by '-' bulleted scenarios. "
-                "For each individual bullet scenario, produce a structured, high-quality test case. "
-                "Write specific, actionable steps - use concrete field names, button labels, and "
-                "exact user actions instead of vague descriptions like 'perform the action'. "
-                "Each test case should typically have between 3 and 7 steps depending on what the "
-                "scenario actually requires - never pad with filler steps, but never skip steps needed "
-                "for someone unfamiliar with the feature to execute the test precisely. "
-                "Separately, identify the specific input values used in the test (e.g. sample prices, "
-                "usernames, file types, dates) as 'test_data' - if no specific data applies, use 'N/A'. "
-                "Additionally, for each module/category group, add 1-2 extra test cases beyond what was "
-                "listed if you identify an important coverage gap (e.g. a missing boundary condition, "
-                "a missing negative case, or a missing edge case), and mark these with "
-                "\"test_scenario\" prefixed by '[AI-added] '. "
+                "You are a senior QA engineer. You will be given a block of test scenario text, "
+                "organized under headers like 'MODULE NAME - CATEGORY' followed by '-' bulleted "
+                "scenarios. You MUST process EVERY SINGLE bullet line in the input - do not skip "
+                "or summarize any of them. If the input has 15 bullets, your output array MUST "
+                "have at least 15 items (one per bullet), plus any extra coverage-gap items you add. "
+                "For each individual bullet scenario, produce a structured, high-quality test case "
+                "with specific, actionable steps - concrete field names, button labels, and exact "
+                "user actions instead of vague descriptions. Each test case should have between 3 "
+                "and 7 steps depending on complexity. "
+                "Identify specific input values used as 'test_data' (or 'N/A' if none apply). "
                 "Return ONLY valid JSON, no markdown, no code fences, no commentary. "
                 "Return a JSON array where each item has exactly these fields: "
-                "\"module\" (the module name from the header), "
-                "\"category\" (the category from the header, e.g. Positive/Negative/Edge Case), "
-                "\"test_scenario\" (the original bullet text, or '[AI-added] ...' for new ones), "
-                "\"steps\" (a single string with numbered steps separated by newlines, specific and actionable), "
-                "\"test_data\" (a single string with the specific input values used, or 'N/A'), "
-                "\"expected_result\" (a single string describing the specific, measurable expected outcome)."
+                "\"module\", \"category\", \"test_scenario\" (the original bullet text), "
+                "\"steps\" (numbered steps separated by newlines), \"test_data\", \"expected_result\"."
             )
-            user_prompt = f"Convert this into structured test cases:\n\n{export_text}"
+            user_prompt = (
+                f"Convert EVERY scenario below into a structured test case. Count the bullets "
+                f"first, then make sure your output has that many items:\n\n{export_text}"
+            )
             ai_output = call_openai(system_prompt, user_prompt)
 
         cleaned = ai_output.strip()
@@ -408,10 +419,10 @@ if st.button("Convert to Excel"):
 
 if st.session_state.get("excel_df") is not None:
     df = st.session_state["excel_df"]
-    st.write("### Preview")
+    df = df.reset_index(drop=True)
+    st.write(f"### Preview ({len(df)} test cases)")
     st.dataframe(df, use_container_width=True)
 
-    df = df.reset_index(drop=True)   
     buffer = io.BytesIO()
     df.to_excel(buffer, index=False, sheet_name="Test Cases")
     buffer.seek(0)
