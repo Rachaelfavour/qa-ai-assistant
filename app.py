@@ -235,3 +235,64 @@ if st.button("Challenge This Requirement"):
 
         st.write("### Requirement Analysis")
         st.write(analysis_output)
+
+# ============================================
+# STRUCTURED OUTPUT: EXCEL EXPORT
+# ============================================
+import pandas as pd
+import io
+
+def parse_test_cases_to_dataframe(raw_text):
+    """Convert AI-generated test case text into a structured table."""
+    rows = []
+    current_module = ""
+    current_category = ""
+    for line in raw_text.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("-"):
+            rows.append({
+                "Module": current_module,
+                "Category": current_category,
+                "Test Scenario": line.lstrip("- ").strip()
+            })
+        elif " - " in line:
+            parts = line.split(" - ", 1)
+            current_module = parts[0].strip()
+            current_category = parts[1].strip()
+        else:
+            current_module = line.strip()
+            current_category = ""
+    return pd.DataFrame(rows)
+
+st.write("---")
+st.write("## 📊 Export Test Cases to Excel")
+st.write("Paste any test scenario text (e.g. from the AI generator above) to convert it into a structured Excel file.")
+
+export_text = st.text_area(
+    "Paste test scenarios to export:",
+    placeholder="Paste AI-generated or existing test scenarios here..."
+)
+
+if st.button("Convert to Excel"):
+    if not export_text.strip():
+        st.warning("Please paste some test scenarios first.")
+    else:
+        df = parse_test_cases_to_dataframe(export_text)
+        if df.empty:
+            st.warning("Couldn't detect any test scenarios in that text. Make sure lines start with '-'.")
+        else:
+            st.write("### Preview")
+            st.dataframe(df)
+
+            buffer = io.BytesIO()
+            df.to_excel(buffer, index=False, sheet_name="Test Cases")
+            buffer.seek(0)
+
+            st.download_button(
+                "⬇️ Download Excel File",
+                buffer,
+                "test_cases.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
