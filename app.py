@@ -278,7 +278,7 @@ if st.button("Generate Acceptance Criteria"):
     else:
         with st.spinner("Generating acceptance criteria..."):
             if ac_format == "Given/When/Then (Gherkin)":
-                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). Produce at least 3 scenarios covering the main happy path and key variations. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."
+            system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). You MUST produce EXACTLY 6 scenarios, no fewer - covering the main happy path, validation/error cases, and edge cases. Count your scenarios before finishing; if you have fewer than 6, add more. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."  
             else:
                 system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria as a simple checklist. Each line should be a single, testable, unambiguous criterion starting with 'The system should...' or 'The user can...'. Produce at least 5 checklist items covering the main happy path, validation, and key edge cases."
             user_prompt = f"Write acceptance criteria for this requirement:\n\n{ac_requirement_text}"
