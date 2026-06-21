@@ -207,54 +207,8 @@ if st.button("Generate Test Cases with AI"):
         st.warning("Please describe a feature first.")
     else:
         with st.spinner("Generating test cases..."):
-           system_prompt = (
-                "You are a senior QA engineer. You MUST generate EXACTLY 10 Positive scenarios, "
-                "EXACTLY 10 Negative scenarios, and EXACTLY 10 Edge Case scenarios. That is 30 "
-                "scenarios total, no fewer. This is a strict requirement, not a suggestion. "
-                "Count your bullets before finishing. If you have fewer than 10 in any category, "
-                "add more before stopping.\n\n"
-                "Format your output EXACTLY like this:\n"
-                "MODULE NAME - POSITIVE SCENARIOS\n"
-                "- scenario 1\n"
-                "- scenario 2\n"
-                "- scenario 3\n"
-                "- scenario 4\n"
-                "- scenario 5\n"
-                "- scenario 6\n"
-                "- scenario 7\n"
-                "- scenario 8\n"
-                "- scenario 9\n"
-                "- scenario 10\n\n"
-                "MODULE NAME - NEGATIVE SCENARIOS\n"
-                "- scenario 1\n"
-                "- scenario 2\n"
-                "- scenario 3\n"
-                "- scenario 4\n"
-                "- scenario 5\n"
-                "- scenario 6\n"
-                "- scenario 7\n"
-                "- scenario 8\n"
-                "- scenario 9\n"
-                "- scenario 10\n\n"
-                "MODULE NAME - EDGE CASES\n"
-                "- scenario 1\n"
-                "- scenario 2\n"
-                "- scenario 3\n"
-                "- scenario 4\n"
-                "- scenario 5\n"
-                "- scenario 6\n"
-                "- scenario 7\n"
-                "- scenario 8\n"
-                "- scenario 9\n"
-                "- scenario 10\n\n"
-                "Replace MODULE NAME with the feature name. Each bullet must be a distinct, "
-                "specific, realistic scenario - no duplicates, no filler. Start each with 'Verify' "
-                "where natural."
-            )
-            user_prompt = (
-                f"Generate exactly 15 QA test scenarios (5 positive, 5 negative, 5 edge cases) "
-                f"for this feature: {feature_description}"
-            )
+            system_prompt = "You are a senior QA engineer. You MUST generate EXACTLY 10 Positive scenarios, EXACTLY 10 Negative scenarios, and EXACTLY 10 Edge Case scenarios. That is 30 scenarios total, no fewer. This is a strict requirement, not a suggestion. Count your bullets before finishing. If you have fewer than 10 in any category, add more before stopping. Format your output EXACTLY like this: MODULE NAME - POSITIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - NEGATIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - EDGE CASES then 10 lines each starting with a dash. Replace MODULE NAME with the feature name. Each bullet must be a distinct, specific, realistic scenario, no duplicates, no filler. Start each with Verify where natural."
+            user_prompt = f"Generate exactly 30 QA test scenarios (10 positive, 10 negative, 10 edge cases) for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
 
         st.session_state["tc_output"] = ai_output
@@ -287,16 +241,7 @@ if st.button("Challenge This Requirement"):
         st.warning("Please paste a requirement first.")
     else:
         with st.spinner("Analyzing requirement..."):
-            system_prompt = (
-                "You are a senior QA engineer reviewing a requirement or user story "
-                "before it goes into development. Critique it constructively. Cover:\n"
-                "1. Ambiguity - any vague or unclear wording\n"
-                "2. Missing acceptance criteria - what's not defined\n"
-                "3. Untestable language - words that can't be verified objectively\n"
-                "4. Edge cases not covered - what scenarios are missing\n"
-                "Format your response with clear headers for each section above. "
-                "Be specific and constructive, not just critical."
-            )
+            system_prompt = "You are a senior QA engineer reviewing a requirement or user story before it goes into development. Critique it constructively. Cover: 1. Ambiguity - any vague or unclear wording. 2. Missing acceptance criteria - what's not defined. 3. Untestable language - words that can't be verified objectively. 4. Edge cases not covered - what scenarios are missing. Format your response with clear headers for each section above. Be specific and constructive, not just critical."
             user_prompt = f"Challenge this requirement:\n\n{requirement_text}"
             analysis_output = call_openai(system_prompt, user_prompt)
 
@@ -333,25 +278,9 @@ if st.button("Generate Acceptance Criteria"):
     else:
         with st.spinner("Generating acceptance criteria..."):
             if ac_format == "Given/When/Then (Gherkin)":
-                system_prompt = (
-                    "You are a senior business analyst. Given a requirement or user story, "
-                    "write clear acceptance criteria in Gherkin format (Given/When/Then). "
-                    "Produce at least 3 scenarios covering the main happy path and key variations. "
-                    "Format each scenario as:\n"
-                    "Scenario: <short title>\n"
-                    "Given <context>\n"
-                    "When <action>\n"
-                    "Then <expected outcome>\n\n"
-                    "Separate scenarios with a blank line."
-                )
+                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). Produce at least 3 scenarios covering the main happy path and key variations. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."
             else:
-                system_prompt = (
-                    "You are a senior business analyst. Given a requirement or user story, "
-                    "write clear acceptance criteria as a simple checklist. "
-                    "Each line should be a single, testable, unambiguous criterion starting with "
-                    "'The system should...' or 'The user can...'. "
-                    "Produce at least 5 checklist items covering the main happy path, validation, and key edge cases."
-                )
+                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria as a simple checklist. Each line should be a single, testable, unambiguous criterion starting with 'The system should...' or 'The user can...'. Produce at least 5 checklist items covering the main happy path, validation, and key edge cases."
             user_prompt = f"Write acceptance criteria for this requirement:\n\n{ac_requirement_text}"
             ac_output = call_openai(system_prompt, user_prompt)
 
@@ -386,26 +315,8 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps, test data and expected results..."):
-            system_prompt = (
-                "You are a senior QA engineer. You will be given a block of test scenario text, "
-                "organized under headers like 'MODULE NAME - CATEGORY' followed by '-' bulleted "
-                "scenarios. You MUST process EVERY SINGLE bullet line in the input - do not skip "
-                "or summarize any of them. If the input has 15 bullets, your output array MUST "
-                "have at least 15 items (one per bullet), plus any extra coverage-gap items you add. "
-                "For each individual bullet scenario, produce a structured, high-quality test case "
-                "with specific, actionable steps - concrete field names, button labels, and exact "
-                "user actions instead of vague descriptions. Each test case should have between 3 "
-                "and 7 steps depending on complexity. "
-                "Identify specific input values used as 'test_data' (or 'N/A' if none apply). "
-                "Return ONLY valid JSON, no markdown, no code fences, no commentary. "
-                "Return a JSON array where each item has exactly these fields: "
-                "\"module\", \"category\", \"test_scenario\" (the original bullet text), "
-                "\"steps\" (numbered steps separated by newlines), \"test_data\", \"expected_result\"."
-            )
-            user_prompt = (
-                f"Convert EVERY scenario below into a structured test case. Count the bullets "
-                f"first, then make sure your output has that many items:\n\n{export_text}"
-            )
+            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. If the input has 30 bullets, your output array MUST have at least 30 items. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. Identify specific input values used as test_data, or N/A if none apply. Return ONLY valid JSON, no markdown, no code fences, no commentary. Return a JSON array where each item has exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data, expected_result."
+            user_prompt = f"Convert EVERY scenario below into a structured test case. Count the bullets first, then make sure your output has that many items:\n\n{export_text}"
             ai_output = call_openai(system_prompt, user_prompt)
 
         cleaned = ai_output.strip()
