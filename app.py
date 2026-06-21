@@ -42,6 +42,22 @@ def feedback_buttons(feature_name, context="", key_suffix=""):
             log_feedback(feature_name, "down", context)
             st.info("Thanks — noted for improvement.")
 
+def extract_json_array(raw_text):
+    """Robustly extract a JSON array from AI output, even with extra text or minor formatting issues."""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(json)?", "", text).strip()
+        text = re.sub(r"```$", "", text).strip()
+
+    start = text.find("[")
+    end = text.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        text = text[start:end + 1]
+
+    text = re.sub(r",\s*([\]}])", r"\1", text)
+
+    return json.loads(text)
+
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
@@ -315,17 +331,12 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps, test data and expected results..."):
-            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. If the input has 30 bullets, your output array MUST have at least 30 items. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. Identify specific input values used as test_data, or N/A if none apply. Return ONLY valid JSON, no markdown, no code fences, no commentary. Return a JSON array where each item has exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data, expected_result."
-            user_prompt = f"Convert EVERY scenario below into a structured test case. Count the bullets first, then make sure your output has that many items:\n\n{export_text}"
+            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. Identify specific input values used as test_data, or N/A if none apply. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data, expected_result."
+            user_prompt = f"Convert EVERY scenario below into a structured test case:\n\n{export_text}"
             ai_output = call_openai(system_prompt, user_prompt)
 
-        cleaned = ai_output.strip()
-        if cleaned.startswith("```"):
-            cleaned = re.sub(r"^```(json)?", "", cleaned).strip()
-            cleaned = re.sub(r"```$", "", cleaned).strip()
-
         try:
-            test_cases = json.loads(cleaned)
+            test_cases = extract_json_array(ai_output)
             df = pd.DataFrame(test_cases)
             df.insert(0, "Test ID", [f"TC-{i+1:03d}" for i in range(len(df))])
             df = df.rename(columns={
@@ -339,7 +350,7 @@ if st.button("Convert to Excel"):
             df["Actual Result"] = ""
             df["Status"] = ""
             st.session_state["excel_df"] = df
-        except json.JSONDecodeError:
+        except Exception:
             st.session_state["excel_df"] = None
             st.session_state["excel_raw"] = ai_output
 
