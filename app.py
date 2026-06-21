@@ -54,7 +54,8 @@ def extract_json_array(raw_text):
     if start != -1 and end != -1 and end > start:
         text = text[start:end + 1]
 
-    text = re.sub(r",\s*([\]}])", r"\1", text)
+   text = re.sub(r",\s*([\]}])", r"\1", text)
+    text = re.sub(r':\s*N/A\s*,', ': "N/A",', text)
 
     return json.loads(text)
 
