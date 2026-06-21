@@ -1,5 +1,8 @@
 import streamlit as st
 import re
+import json
+import pandas as pd
+import io
 from ai_helper import call_openai
 
 # Load data
@@ -164,15 +167,16 @@ if query:
         st.warning("No results found. Try using different keywords or select a module.")
 
 # ============================================
-# AI TEST CASE GENERATION
+# AI TEST CASE GENERATION (STRUCTURED JSON)
 # ============================================
 st.write("---")
 st.write("## 🤖 AI Test Case Generator")
-st.write("Describe a feature and get fresh AI-generated test scenarios in the same style as above.")
+st.write("Describe a feature and get fresh AI-generated test cases with full Steps and Expected Results.")
 
 feature_description = st.text_area(
     "Describe the feature to test:",
-    placeholder="e.g. User can apply a discount code at checkout"
+    placeholder="e.g. User can schedule a recurring weekly meeting",
+    key="feature_input"
 )
 
 if st.button("Generate Test Cases with AI"):
@@ -181,28 +185,79 @@ if st.button("Generate Test Cases with AI"):
     else:
         with st.spinner("Generating test cases..."):
             system_prompt = (
-                "You are a senior QA engineer. Generate test scenarios in this exact style:\n"
-                "MODULE NAME - POSITIVE SCENARIOS\n"
-                "- scenario one\n"
-                "- scenario two\n\n"
-                "MODULE NAME - NEGATIVE SCENARIOS\n"
-                "- scenario one\n\n"
-                "MODULE NAME - EDGE CASES\n"
-                "- scenario one\n\n"
-                "Keep each bullet concise, starting with 'Verify' where natural. "
-                "Use the feature name in place of MODULE NAME."
+                "You are a senior QA engineer. Generate test cases for the given feature. "
+                "Return ONLY valid JSON, no markdown formatting, no commentary, no code fences. "
+                "Return a JSON array where each item has exactly these fields: "
+                "\"module\" (string), \"category\" (one of: Positive, Negative, Edge Case), "
+                "\"test_case\" (short title), \"steps\" (array of strings, step-by-step actions), "
+                "\"expected_result\" (string). "
+                "Generate at least 2 Positive, 2 Negative, and 2 Edge Case test cases."
             )
-            user_prompt = f"Generate QA test scenarios for this feature: {feature_description}"
+            user_prompt = f"Generate structured QA test cases for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
 
-        st.write("### Generated Test Scenarios")
-        st.code(ai_output)
+        st.session_state["last_ai_output"] = ai_output
+
+if "last_ai_output" in st.session_state:
+    raw = st.session_state["last_ai_output"]
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(json)?", "", cleaned).strip()
+        cleaned = re.sub(r"```$", "", cleaned).strip()
+
+    try:
+        test_cases = json.loads(cleaned)
+        df = pd.DataFrame(test_cases)
+        df["steps"] = df["steps"].apply(lambda s: "\n".join(s) if isinstance(s, list) else s)
+        df = df.rename(columns={
+            "module": "Module",
+            "category": "Category",
+            "test_case": "Test Case",
+            "steps": "Steps",
+            "expected_result": "Expected Result"
+        })
+
+        st.write("### Generated Test Cases")
+        st.dataframe(df, use_container_width=True)
+
+        # Feedback loop
+        st.write("#### Was this output useful?")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("👍 Useful"):
+                st.session_state["feedback_log"] = st.session_state.get("feedback_log", [])
+                st.session_state["feedback_log"].append({"feature": feature_description, "rating": "up"})
+                st.success("Thanks for the feedback!")
+        with col2:
+            if st.button("👎 Not useful"):
+                st.session_state["feedback_log"] = st.session_state.get("feedback_log", [])
+                st.session_state["feedback_log"].append({"feature": feature_description, "rating": "down"})
+                st.info("Thanks — noted for improvement.")
+
+        # Excel export
+        buffer = io.BytesIO()
+        df.to_excel(buffer, index=False, sheet_name="Test Cases")
+        buffer.seek(0)
         st.download_button(
-            "⬇️ Download AI Test Scenarios",
-            ai_output,
-            "ai_generated_test_scenarios.txt"
+            "⬇️ Download Excel File",
+            buffer,
+            "ai_test_cases.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        # ============================================
+
+        # JSON export
+        st.download_button(
+            "⬇️ Download JSON File",
+            json.dumps(test_cases, indent=2),
+            "ai_test_cases.json",
+            mime="application/json"
+        )
+
+    except json.JSONDecodeError:
+        st.warning("Couldn't parse structured output. Showing raw AI response instead:")
+        st.code(raw)
+
+# ============================================
 # AI REQUIREMENT ANALYSIS ("CHALLENGE MY REQUIREMENT")
 # ============================================
 st.write("---")
@@ -229,70 +284,8 @@ if st.button("Challenge This Requirement"):
                 "Format your response with clear headers for each section above. "
                 "Be specific and constructive, not just critical."
             )
-            
             user_prompt = f"Challenge this requirement:\n\n{requirement_text}"
             analysis_output = call_openai(system_prompt, user_prompt)
 
         st.write("### Requirement Analysis")
         st.write(analysis_output)
-
-# ============================================
-# STRUCTURED OUTPUT: EXCEL EXPORT
-# ============================================
-import pandas as pd
-import io
-
-def parse_test_cases_to_dataframe(raw_text):
-    """Convert AI-generated test case text into a structured table."""
-    rows = []
-    current_module = ""
-    current_category = ""
-    for line in raw_text.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("-"):
-            rows.append({
-                "Module": current_module,
-                "Category": current_category,
-                "Test Scenario": line.lstrip("- ").strip()
-            })
-        elif " - " in line:
-            parts = line.split(" - ", 1)
-            current_module = parts[0].strip()
-            current_category = parts[1].strip()
-        else:
-            current_module = line.strip()
-            current_category = ""
-    return pd.DataFrame(rows)
-
-st.write("---")
-st.write("## 📊 Export Test Cases to Excel")
-st.write("Paste any test scenario text (e.g. from the AI generator above) to convert it into a structured Excel file.")
-
-export_text = st.text_area(
-    "Paste test scenarios to export:",
-    placeholder="Paste AI-generated or existing test scenarios here..."
-)
-
-if st.button("Convert to Excel"):
-    if not export_text.strip():
-        st.warning("Please paste some test scenarios first.")
-    else:
-        df = parse_test_cases_to_dataframe(export_text)
-        if df.empty:
-            st.warning("Couldn't detect any test scenarios in that text. Make sure lines start with '-'.")
-        else:
-            st.write("### Preview")
-            st.dataframe(df)
-
-            buffer = io.BytesIO()
-            df.to_excel(buffer, index=False, sheet_name="Test Cases")
-            buffer.seek(0)
-
-            st.download_button(
-                "⬇️ Download Excel File",
-                buffer,
-                "test_cases.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
