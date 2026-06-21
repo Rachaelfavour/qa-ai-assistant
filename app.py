@@ -350,17 +350,28 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps and expected results..."):
-            system_prompt = (
-                "You are a senior QA engineer. You will be given a block of test scenario text, "
-                "organized under headers like 'MODULE NAME - CATEGORY' followed by '-' bulleted scenarios. "
-                "For each individual bullet scenario, produce a structured test case. "
+      
+                system_prompt = (
+                "You are a senior QA engineer with deep test coverage expertise. You will be given "
+                "a block of test scenario text, organized under headers like 'MODULE NAME - CATEGORY' "
+                "followed by '-' bulleted scenarios. "
+                "For each individual bullet scenario, produce a structured, high-quality test case. "
+                "Write specific, actionable steps - use concrete field names, button labels, sample "
+                "values, and exact user actions instead of vague descriptions like 'perform the action'. "
+                "Each test case should typically have between 3 and 7 steps depending on what the "
+                "scenario actually requires - never pad with filler steps, but never skip steps needed "
+                "for someone unfamiliar with the feature to execute the test precisely. "
+                "Additionally, for each module/category group, add 1-2 extra test cases beyond what was "
+                "listed if you identify an important coverage gap (e.g. a missing boundary condition, "
+                "a missing negative case, or a missing edge case), and mark these with "
+                "\"test_scenario\" prefixed by '[AI-added] '. "
                 "Return ONLY valid JSON, no markdown, no code fences, no commentary. "
                 "Return a JSON array where each item has exactly these fields: "
                 "\"module\" (the module name from the header), "
                 "\"category\" (the category from the header, e.g. Positive/Negative/Edge Case), "
-                "\"test_scenario\" (the original bullet text), "
-                "\"steps\" (a single string with numbered steps separated by newlines, specific to this scenario), "
-                "\"expected_result\" (a single string describing the specific expected outcome for this scenario)."
+                "\"test_scenario\" (the original bullet text, or '[AI-added] ...' for new ones), "
+                "\"steps\" (a single string with numbered steps separated by newlines, specific and actionable), "
+                "\"expected_result\" (a single string describing the specific, measurable expected outcome)."
             )
             user_prompt = f"Convert this into structured test cases:\n\n{export_text}"
             ai_output = call_openai(system_prompt, user_prompt)
