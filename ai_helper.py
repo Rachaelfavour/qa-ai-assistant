@@ -1,11 +1,6 @@
 """
 ai_helper.py
-Centralised OpenAI integration for the QA Assistant Chatbot.
-
-Keeps all AI calls in one place so app.py stays clean and the
-prompts/logic are easy to test and reuse across features:
-- test case generation
-- requirement analysis ("challenge my requirement")
+Centralised Groq (OpenAI-compatible) integration for the QA Assistant Chatbot.
 """
 
 import streamlit as st
@@ -13,26 +8,14 @@ from openai import OpenAI
 
 
 def get_client():
-    """
-    Returns an OpenAI client using the API key stored in Streamlit secrets.
-    Looking for a key called OPENAI_API_KEY in .streamlit/secrets.toml
-    (locally) or in the app's Secrets settings (Streamlit Community Cloud).
-    """
-    api_key = st.secrets.get("OPENAI_API_KEY")
+    api_key = st.secrets.get("GROQ_API_KEY")
     if not api_key:
-        st.error(
-            "No OpenAI API key found. Add OPENAI_API_KEY to your "
-            "Streamlit secrets to enable AI features."
-        )
+        st.error("No Groq API key found. Add GROQ_API_KEY to your Streamlit secrets.")
         st.stop()
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
 
 
-def call_openai(system_prompt: str, user_prompt: str, model: str = "gpt-4o-mini") -> str:
-    """
-    Generic helper to call the OpenAI chat completion API.
-    Returns the raw text response, or an error message string on failure.
-    """
+def call_openai(system_prompt: str, user_prompt: str, model: str = "llama-3.3-70b-versatile") -> str:
     client = get_client()
     try:
         response = client.chat.completions.create(
