@@ -207,6 +207,7 @@ if st.button("Generate Test Cases with AI"):
         st.warning("Please describe a feature first.")
     else:
         with st.spinner("Generating test cases..."):
+            if ac_format == "Given/When/Then (Gherkin)":
             system_prompt = "You are a senior QA engineer. You MUST generate EXACTLY 10 Positive scenarios, EXACTLY 10 Negative scenarios, and EXACTLY 10 Edge Case scenarios. That is 30 scenarios total, no fewer. This is a strict requirement, not a suggestion. Count your bullets before finishing. If you have fewer than 10 in any category, add more before stopping. Format your output EXACTLY like this: MODULE NAME - POSITIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - NEGATIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - EDGE CASES then 10 lines each starting with a dash. Replace MODULE NAME with the feature name. Each bullet must be a distinct, specific, realistic scenario, no duplicates, no filler. Start each with Verify where natural."
             user_prompt = f"Generate exactly 30 QA test scenarios (10 positive, 10 negative, 10 edge cases) for this feature: {feature_description}"
             ai_output = call_openai(system_prompt, user_prompt)
