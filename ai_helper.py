@@ -25,6 +25,7 @@ def call_openai(system_prompt: str, user_prompt: str, model: str = "llama-3.3-70
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.4,
+            max_tokens=4096,
         )
         return response.choices[0].message.content
     except Exception as e:
