@@ -411,6 +411,7 @@ if st.session_state.get("excel_df") is not None:
     st.write("### Preview")
     st.dataframe(df, use_container_width=True)
 
+    df = df.reset_index(drop=True)   
     buffer = io.BytesIO()
     df.to_excel(buffer, index=False, sheet_name="Test Cases")
     buffer.seek(0)
