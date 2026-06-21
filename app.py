@@ -43,21 +43,25 @@ def feedback_buttons(feature_name, context="", key_suffix=""):
             st.info("Thanks — noted for improvement.")
 
 def extract_json_array(raw_text):
-    """Robustly extract a JSON array from AI output, even with extra text or minor formatting issues."""
     text = raw_text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(json)?", "", text).strip()
         text = re.sub(r"```$", "", text).strip()
-
     start = text.find("[")
     end = text.rfind("]")
     if start != -1 and end != -1 and end > start:
         text = text[start:end + 1]
-
-   text = re.sub(r",\s*([\]}])", r"\1", text)
-    text = re.sub(r':\s*N/A\s*,', ': "N/A",', text)
-
+    text = re.sub(r":\s*N/A\s*,", ': "N/A",', text)
+    text = re.sub(r":\s*N/A\s*}", ': "N/A"}', text)
+    text = re.sub(r",\s*([\]}])", r"\1", text)
     return json.loads(text)
+
+def flatten_value(v):
+    if isinstance(v, dict):
+        return ", ".join(f"{k}: {val}" for k, val in v.items())
+    if isinstance(v, list):
+        return ", ".join(str(item) for item in v)
+    return v
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
@@ -332,13 +336,15 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps, test data and expected results..."):
-            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. Identify specific input values used as test_data, or N/A if none apply. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data, expected_result."
+            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. For test_data, always use a single plain string value, never a nested object - for example write min price 10 and max price 20 as plain text, not as a JSON object. If no specific data applies, use the string N/A in quotes. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data (a plain string), expected_result."
             user_prompt = f"Convert EVERY scenario below into a structured test case:\n\n{export_text}"
             ai_output = call_openai(system_prompt, user_prompt)
 
         try:
             test_cases = extract_json_array(ai_output)
             df = pd.DataFrame(test_cases)
+            for col in df.columns:
+                df[col] = df[col].apply(flatten_value)
             df.insert(0, "Test ID", [f"TC-{i+1:03d}" for i in range(len(df))])
             df = df.rename(columns={
                 "module": "Module",
