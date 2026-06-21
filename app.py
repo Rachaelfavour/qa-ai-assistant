@@ -1,5 +1,6 @@
 import streamlit as st
 import re
+import json
 import pandas as pd
 import io
 from ai_helper import call_openai
@@ -239,39 +240,11 @@ if st.button("Challenge This Requirement"):
         st.write(analysis_output)
 
 # ============================================
-# STRUCTURED OUTPUT: EXCEL EXPORT
+# STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
 # ============================================
-def parse_test_cases_to_dataframe(raw_text):
-    """Convert AI-generated test case text into a structured table with
-    Module, Category, Test Scenario, Steps, and Expected Result columns."""
-    rows = []
-    current_module = ""
-    current_category = ""
-    for line in raw_text.split("\n"):
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("-"):
-            scenario_text = line.lstrip("- ").strip()
-            rows.append({
-                "Module": current_module,
-                "Category": current_category,
-                "Test Scenario": scenario_text,
-                "Steps": "1. Navigate to the relevant screen\n2. Perform the action described in the scenario\n3. Observe the system response",
-                "Expected Result": "System behaves as described in the scenario (" + scenario_text + ")"
-            })
-        elif " - " in line:
-            parts = line.split(" - ", 1)
-            current_module = parts[0].strip()
-            current_category = parts[1].strip()
-        else:
-            current_module = line.strip()
-            current_category = ""
-    return pd.DataFrame(rows)
-
 st.write("---")
 st.write("## 📊 Export Test Cases to Excel")
-st.write("Paste any test scenario text (e.g. from the AI generator above) to convert it into a structured Excel file with Steps and Expected Results.")
+st.write("Paste any test scenario text (e.g. from the AI generator above). AI will fill in real Steps and Expected Results for each one, then export to Excel.")
 
 export_text = st.text_area(
     "Paste test scenarios to export:",
@@ -282,10 +255,38 @@ if st.button("Convert to Excel"):
     if not export_text.strip():
         st.warning("Please paste some test scenarios first.")
     else:
-        df = parse_test_cases_to_dataframe(export_text)
-        if df.empty:
-            st.warning("Couldn't detect any test scenarios in that text. Make sure lines start with '-'.")
-        else:
+        with st.spinner("Generating detailed steps and expected results..."):
+            system_prompt = (
+                "You are a senior QA engineer. You will be given a block of test scenario text, "
+                "organized under headers like 'MODULE NAME - CATEGORY' followed by '-' bulleted scenarios. "
+                "For each individual bullet scenario, produce a structured test case. "
+                "Return ONLY valid JSON, no markdown, no code fences, no commentary. "
+                "Return a JSON array where each item has exactly these fields: "
+                "\"module\" (the module name from the header), "
+                "\"category\" (the category from the header, e.g. Positive/Negative/Edge Case), "
+                "\"test_scenario\" (the original bullet text), "
+                "\"steps\" (a single string with numbered steps separated by newlines, specific to this scenario), "
+                "\"expected_result\" (a single string describing the specific expected outcome for this scenario)."
+            )
+            user_prompt = f"Convert this into structured test cases:\n\n{export_text}"
+            ai_output = call_openai(system_prompt, user_prompt)
+
+        cleaned = ai_output.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(json)?", "", cleaned).strip()
+            cleaned = re.sub(r"```$", "", cleaned).strip()
+
+        try:
+            test_cases = json.loads(cleaned)
+            df = pd.DataFrame(test_cases)
+            df = df.rename(columns={
+                "module": "Module",
+                "category": "Category",
+                "test_scenario": "Test Scenario",
+                "steps": "Steps",
+                "expected_result": "Expected Result"
+            })
+
             st.write("### Preview")
             st.dataframe(df, use_container_width=True)
 
@@ -299,3 +300,7 @@ if st.button("Convert to Excel"):
                 "test_cases.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
+
+        except json.JSONDecodeError:
+            st.warning("AI response couldn't be parsed into a table. Raw response below:")
+            st.code(ai_output)
