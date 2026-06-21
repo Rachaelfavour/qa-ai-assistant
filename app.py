@@ -387,6 +387,7 @@ if st.button("Convert to Excel"):
         try:
             test_cases = json.loads(cleaned)
             df = pd.DataFrame(test_cases)
+            df.insert(0, "Test ID", [f"TC-{i+1:03d}" for i in range(len(df))])
             df = df.rename(columns={
                 "module": "Module",
                 "category": "Category",
