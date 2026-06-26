@@ -65,14 +65,14 @@ def flatten_value(v):
         return ", ".join(str(item) for item in v)
     return v
 
-def create_azure_devops_bug(title, severity, description, steps_to_reproduce):
+def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
     try:
         pat = st.secrets.get("AZURE_DEVOPS_PAT")
         org = "richkome"
-        project = "BlueSkyDataDriven"
+        project = "QA-Assistant"
         if not pat:
             return False, "Azure DevOps PAT not found in Streamlit secrets."
-        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Bug?api-version=7.1"
+        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Issue?api-version=7.1"
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {
             "Content-Type": "application/json-patch+json",
@@ -80,19 +80,17 @@ def create_azure_devops_bug(title, severity, description, steps_to_reproduce):
         }
         body = [
             {"op": "add", "path": "/fields/System.Title", "value": title},
-            {"op": "add", "path": "/fields/Microsoft.VSTS.Common.Severity", "value": severity},
-            {"op": "add", "path": "/fields/System.Description", "value": description},
-            {"op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": steps_to_reproduce},
-            {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant"}
+            {"op": "add", "path": "/fields/System.Description", "value": f"<b>Severity:</b> {severity}<br><br><b>Description:</b><br>{description}<br><br><b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
+            {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant; Bug-Report"}
         ]
         response = requests.post(url, headers=headers, json=body)
         if response.status_code in [200, 201]:
             work_item = response.json()
             work_item_id = work_item.get("id")
             work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
-            return True, f"Bug #{work_item_id} created successfully! [View in Azure DevOps]({work_item_url})"
+            return True, f"✅ Issue #{work_item_id} created successfully! [View in Azure DevOps]({work_item_url})"
         else:
-            return False, f"Failed to create bug: {response.status_code} - {response.text}"
+            return False, f"Failed to create issue: {response.status_code} - {response.text}"
     except Exception as e:
         return False, f"Error: {e}"
 
@@ -451,7 +449,7 @@ if st.button("🐛 Log Bug to Azure DevOps"):
         st.warning("Please enter steps to reproduce.")
     else:
         with st.spinner("Logging bug to Azure DevOps..."):
-            success, message = create_azure_devops_bug(
+            success, message = create_azure_devops_issue(
                 title=bug_title,
                 severity=bug_severity,
                 description=bug_description,
