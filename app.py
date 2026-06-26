@@ -351,6 +351,41 @@ if "ac_output" in st.session_state:
     feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
 
 # ============================================
+# USE CASE GENERATOR
+# ============================================
+st.write("---")
+st.write("## 📋 Use Case Generator")
+st.write("Describe a feature and AI will generate a structured use case document.")
+
+uc_feature = st.text_area(
+    "Describe the feature:",
+    placeholder="e.g. User can reset their password via email link",
+    key="uc_input"
+)
+
+if st.button("Generate Use Case"):
+    if not uc_feature.strip():
+        st.warning("Please describe a feature first.")
+    else:
+        with st.spinner("Generating use case..."):
+            system_prompt = "You are a senior business analyst. Given a feature description, generate a complete, structured use case document with these exact sections: Use Case Name, Actor(s), Preconditions, Main Success Scenario (numbered steps), Alternative Flows (numbered), Exception Flows (numbered), Postconditions, and Business Rules. Be specific, realistic and thorough. Format each section with a clear bold header."
+            user_prompt = f"Generate a full structured use case for this feature: {uc_feature}"
+            uc_output = call_openai(system_prompt, user_prompt)
+
+        st.session_state["uc_output"] = uc_output
+        st.session_state["uc_feature"] = uc_feature
+
+if "uc_output" in st.session_state:
+    st.write("### Generated Use Case")
+    st.write(st.session_state["uc_output"])
+    st.download_button(
+        "⬇️ Download Use Case",
+        st.session_state["uc_output"],
+        "use_case.txt"
+    )
+    feedback_buttons("Use Case Generator", st.session_state.get("uc_feature", ""), key_suffix="uc")
+
+# ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
 # ============================================
 st.write("---")
