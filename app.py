@@ -4,6 +4,8 @@ import json
 import pandas as pd
 import io
 import datetime
+import requests
+import base64
 from ai_helper import call_openai
 
 # Load data
@@ -62,6 +64,37 @@ def flatten_value(v):
     if isinstance(v, list):
         return ", ".join(str(item) for item in v)
     return v
+
+def create_azure_devops_bug(title, severity, description, steps_to_reproduce):
+    try:
+        pat = st.secrets.get("AZURE_DEVOPS_PAT")
+        org = "richkome"
+        project = "BlueSkyDataDriven"
+        if not pat:
+            return False, "Azure DevOps PAT not found in Streamlit secrets."
+        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Bug?api-version=7.1"
+        credentials = base64.b64encode(f":{pat}".encode()).decode()
+        headers = {
+            "Content-Type": "application/json-patch+json",
+            "Authorization": f"Basic {credentials}"
+        }
+        body = [
+            {"op": "add", "path": "/fields/System.Title", "value": title},
+            {"op": "add", "path": "/fields/Microsoft.VSTS.Common.Severity", "value": severity},
+            {"op": "add", "path": "/fields/System.Description", "value": description},
+            {"op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": steps_to_reproduce},
+            {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant"}
+        ]
+        response = requests.post(url, headers=headers, json=body)
+        if response.status_code in [200, 201]:
+            work_item = response.json()
+            work_item_id = work_item.get("id")
+            work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
+            return True, f"Bug #{work_item_id} created successfully! [View in Azure DevOps]({work_item_url})"
+        else:
+            return False, f"Failed to create bug: {response.status_code} - {response.text}"
+    except Exception as e:
+        return False, f"Error: {e}"
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
@@ -336,7 +369,7 @@ if st.button("Convert to Excel"):
         st.warning("Please paste some test scenarios first.")
     else:
         with st.spinner("Generating detailed steps, test data and expected results..."):
-            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. For test_data, always use a single plain string value, never a nested object - for example write min price 10 and max price 20 as plain text, not as a JSON object. If no specific data applies, use the string N/A in quotes. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data (a plain string), expected_result."
+            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. For test_data, always use a single plain string value, never a nested object. If no specific data applies, use the string N/A in quotes. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data (a plain string), expected_result."
             user_prompt = f"Convert EVERY scenario below into a structured test case:\n\n{export_text}"
             ai_output = call_openai(system_prompt, user_prompt)
 
@@ -381,6 +414,53 @@ if st.session_state.get("excel_df") is not None:
 elif "excel_raw" in st.session_state:
     st.warning("AI response couldn't be parsed into a table. Raw response below:")
     st.code(st.session_state["excel_raw"])
+
+# ============================================
+# BUG REPORT — LOGS TO AZURE DEVOPS
+# ============================================
+st.write("---")
+st.write("## 🐛 Bug Report")
+st.write("Log a bug directly to Azure DevOps as a Work Item.")
+
+bug_title = st.text_input(
+    "Bug Title:",
+    placeholder="e.g. Login button unresponsive on mobile"
+)
+
+bug_severity = st.selectbox(
+    "Severity:",
+    ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"]
+)
+
+bug_description = st.text_area(
+    "Bug Description:",
+    placeholder="Describe what happened..."
+)
+
+bug_steps = st.text_area(
+    "Steps to Reproduce:",
+    placeholder="1. Go to login page\n2. Enter valid credentials\n3. Click Login button\n4. Nothing happens"
+)
+
+if st.button("🐛 Log Bug to Azure DevOps"):
+    if not bug_title.strip():
+        st.warning("Please enter a bug title.")
+    elif not bug_description.strip():
+        st.warning("Please enter a bug description.")
+    elif not bug_steps.strip():
+        st.warning("Please enter steps to reproduce.")
+    else:
+        with st.spinner("Logging bug to Azure DevOps..."):
+            success, message = create_azure_devops_bug(
+                title=bug_title,
+                severity=bug_severity,
+                description=bug_description,
+                steps_to_reproduce=bug_steps
+            )
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
 
 # ============================================
 # FEEDBACK SUMMARY (ADMIN VIEW)
