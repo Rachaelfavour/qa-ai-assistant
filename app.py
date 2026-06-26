@@ -94,6 +94,75 @@ def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
     except Exception as e:
         return False, f"Error: {e}"
 
+def create_azure_devops_test_plan(plan_title, test_cases_json):
+    try:
+        pat = st.secrets.get("AZURE_DEVOPS_PAT")
+        org = "richkome"
+        project = "QA-Assistant"
+        if not pat:
+            return False, "Azure DevOps PAT not found in Streamlit secrets."
+        credentials = base64.b64encode(f":{pat}".encode()).decode()
+        headers_patch = {
+            "Content-Type": "application/json-patch+json",
+            "Authorization": f"Basic {credentials}"
+        }
+        headers_json = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {credentials}"
+        }
+
+        # Create Test Plan
+        plan_url = f"https://dev.azure.com/{org}/{project}/_apis/testplan/plans?api-version=7.1"
+        plan_body = {"name": plan_title}
+        plan_response = requests.post(plan_url, headers=headers_json, json=plan_body)
+        if plan_response.status_code not in [200, 201]:
+            return False, f"Failed to create test plan: {plan_response.status_code} - {plan_response.text}"
+        plan_id = plan_response.json().get("id")
+
+        # Create Test Suite inside the plan
+        suite_url = f"https://dev.azure.com/{org}/{project}/_apis/testplan/Plans/{plan_id}/suites?api-version=7.1"
+        suite_body = {"suiteType": "staticTestSuite", "name": f"{plan_title} - Test Suite"}
+        suite_response = requests.post(suite_url, headers=headers_json, json=suite_body)
+        if suite_response.status_code not in [200, 201]:
+            return False, f"Failed to create test suite: {suite_response.status_code} - {suite_response.text}"
+        suite_id = suite_response.json().get("id")
+
+        # Create individual test cases as work items and add to suite
+        created_count = 0
+        for tc in test_cases_json[:10]:
+            tc_title = tc.get("test_scenario", tc.get("Test Scenario", "Test Case"))[:255]
+            steps_text = tc.get("steps", tc.get("Steps", ""))
+            expected = tc.get("expected_result", tc.get("Expected Result", ""))
+
+            steps_xml = ""
+            if steps_text:
+                step_lines = [s.strip() for s in steps_text.split("\n") if s.strip()]
+                for i, step in enumerate(step_lines, 1):
+                    steps_xml += f'<step id="{i}" type="ActionStep"><parameterizedString isformatted="true">{step}</parameterizedString><parameterizedString isformatted="true">{expected if i == len(step_lines) else ""}</parameterizedString></step>'
+                steps_xml = f"<steps id='0' last='{len(step_lines)}'>{steps_xml}</steps>"
+
+            tc_url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Test%20Case?api-version=7.1"
+            tc_body = [
+                {"op": "add", "path": "/fields/System.Title", "value": tc_title},
+                {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant"},
+            ]
+            if steps_xml:
+                tc_body.append({"op": "add", "path": "/fields/Microsoft.VSTS.TCM.Steps", "value": steps_xml})
+
+            tc_response = requests.post(tc_url, headers=headers_patch, json=tc_body)
+            if tc_response.status_code in [200, 201]:
+                tc_id = tc_response.json().get("id")
+                # Add test case to suite
+                add_url = f"https://dev.azure.com/{org}/{project}/_apis/testplan/Plans/{plan_id}/Suites/{suite_id}/TestCase?api-version=7.1"
+                add_body = [{"workItem": {"id": tc_id}}]
+                requests.post(add_url, headers=headers_json, json=add_body)
+                created_count += 1
+
+        plan_url_view = f"https://dev.azure.com/{org}/{project}/_testPlans/define?planId={plan_id}"
+        return True, f"✅ Test Plan created with {created_count} test cases! [View in Azure DevOps]({plan_url_view})"
+    except Exception as e:
+        return False, f"Error: {e}"
+
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
@@ -290,7 +359,7 @@ requirement_text = st.text_area(
 
 if st.button("Challenge This Requirement"):
     if not requirement_text.strip():
-        st.warning("Please paste a requirement first.")
+        st.warning("Please describe a requirement first.")
     else:
         with st.spinner("Analyzing requirement..."):
             system_prompt = "You are a senior QA engineer reviewing a requirement or user story before it goes into development. Critique it constructively. Cover: 1. Ambiguity - any vague or unclear wording. 2. Missing acceptance criteria - what's not defined. 3. Untestable language - words that can't be verified objectively. 4. Edge cases not covered - what scenarios are missing. Format your response with clear headers for each section above. Be specific and constructive, not just critical."
@@ -386,6 +455,64 @@ if "uc_output" in st.session_state:
     feedback_buttons("Use Case Generator", st.session_state.get("uc_feature", ""), key_suffix="uc")
 
 # ============================================
+# TEST COVERAGE RISK ANALYSIS
+# ============================================
+st.write("---")
+st.write("## 🎯 Test Coverage Risk Analysis")
+st.write("Paste a list of features or modules. AI will predict which are highest risk and need the most testing attention.")
+
+risk_features = st.text_area(
+    "Paste your features/modules (one per line):",
+    placeholder="e.g.\nUser Login\nPassword Reset\nPayment Checkout\nProduct Search\nUser Profile\nAdmin Dashboard",
+    key="risk_input"
+)
+
+if st.button("Analyse Risk"):
+    if not risk_features.strip():
+        st.warning("Please paste a list of features first.")
+    else:
+        with st.spinner("Analysing test coverage risk..."):
+            system_prompt = "You are a senior QA engineer and risk analyst. Given a list of software features or modules, analyse each one for testing risk. For each feature, provide: Risk Level (Critical/High/Medium/Low), Risk Score (1-10), Key Risk Factors (why it is risky), Recommended Test Focus (what types of testing to prioritise), and Estimated Test Effort (Low/Medium/High). Return ONLY a valid JSON array with no markdown, no code fences, no commentary. Each item must have exactly these fields: feature, risk_level, risk_score, risk_factors, recommended_focus, test_effort."
+            user_prompt = f"Analyse the testing risk for each of these features:\n\n{risk_features}"
+            risk_output = call_openai(system_prompt, user_prompt)
+
+        try:
+            risk_data = extract_json_array(risk_output)
+            risk_df = pd.DataFrame(risk_data)
+            risk_df = risk_df.rename(columns={
+                "feature": "Feature",
+                "risk_level": "Risk Level",
+                "risk_score": "Risk Score",
+                "risk_factors": "Key Risk Factors",
+                "recommended_focus": "Recommended Test Focus",
+                "test_effort": "Test Effort"
+            })
+            risk_df = risk_df.sort_values("Risk Score", ascending=False)
+            st.session_state["risk_df"] = risk_df
+        except Exception:
+            st.session_state["risk_df"] = None
+            st.session_state["risk_raw"] = risk_output
+
+if st.session_state.get("risk_df") is not None:
+    df = st.session_state["risk_df"]
+    st.write("### Risk Analysis Results")
+    st.dataframe(df, use_container_width=True)
+
+    buffer = io.BytesIO()
+    df.to_excel(buffer, index=False, sheet_name="Risk Analysis")
+    buffer.seek(0)
+    st.download_button(
+        "⬇️ Download Risk Analysis (Excel)",
+        buffer,
+        "test_coverage_risk.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    feedback_buttons("Risk Analysis", key_suffix="risk")
+elif "risk_raw" in st.session_state:
+    st.warning("Could not parse risk analysis. Raw response below:")
+    st.code(st.session_state["risk_raw"])
+
+# ============================================
 # STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
 # ============================================
 st.write("---")
@@ -447,6 +574,49 @@ if st.session_state.get("excel_df") is not None:
 elif "excel_raw" in st.session_state:
     st.warning("AI response couldn't be parsed into a table. Raw response below:")
     st.code(st.session_state["excel_raw"])
+
+# ============================================
+# AUTO-CREATE AZURE DEVOPS TEST PLAN
+# ============================================
+st.write("---")
+st.write("## 🗂️ Auto-Create Azure DevOps Test Plan")
+st.write("Generate test cases with AI, then automatically create a full Test Plan with Test Suite in Azure DevOps.")
+
+tp_feature = st.text_area(
+    "Describe the feature to create a test plan for:",
+    placeholder="e.g. User checkout and payment process",
+    key="tp_input"
+)
+
+tp_plan_name = st.text_input(
+    "Test Plan Name:",
+    placeholder="e.g. Checkout Feature - Sprint 1 Test Plan"
+)
+
+if st.button("🗂️ Generate & Create Test Plan in Azure DevOps"):
+    if not tp_feature.strip():
+        st.warning("Please describe a feature first.")
+    elif not tp_plan_name.strip():
+        st.warning("Please enter a test plan name.")
+    else:
+        with st.spinner("Generating test cases and creating Azure DevOps Test Plan..."):
+            system_prompt = "You are a senior QA engineer. Generate structured test cases for the given feature. Return ONLY a valid JSON array with no markdown, no code fences. Each item must have exactly these fields: test_scenario (short title), steps (numbered steps as a single string separated by newlines), expected_result (single string). Generate at least 5 test cases covering positive, negative and edge scenarios."
+            user_prompt = f"Generate structured test cases for: {tp_feature}"
+            tc_output = call_openai(system_prompt, user_prompt)
+
+        try:
+            tc_data = extract_json_array(tc_output)
+            success, message = create_azure_devops_test_plan(tp_plan_name, tc_data)
+            if success:
+                st.success(message)
+                st.write("### Test Cases Created:")
+                tc_df = pd.DataFrame(tc_data)
+                st.dataframe(tc_df, use_container_width=True)
+            else:
+                st.error(message)
+        except Exception as e:
+            st.error(f"Could not parse test cases: {e}")
+            st.code(tc_output)
 
 # ============================================
 # BUG REPORT — LOGS TO AZURE DEVOPS
