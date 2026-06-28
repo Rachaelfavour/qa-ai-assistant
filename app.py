@@ -96,7 +96,7 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
         org = "richkome"
         project = "QA-Assistant"
         if not pat:
-            return False, "Azure DevOps PAT not found in Streamlit secrets."
+            return False, "Azure DevOps PAT not found in Streamlit secrets.", None
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {"Content-Type": "application/json-patch+json", "Authorization": f"Basic {credentials}"}
         epic_url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Epic?api-version=7.1"
@@ -107,7 +107,7 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
         ]
         epic_response = requests.post(epic_url, headers=headers, json=epic_body)
         if epic_response.status_code not in [200, 201]:
-            return False, f"Failed to create Epic: {epic_response.status_code} - {epic_response.text}"
+            return False, f"Failed to create Epic: {epic_response.status_code} - {epic_response.text}", None
         epic_id = epic_response.json().get("id")
         epic_url_view = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{epic_id}"
         created_count = 0
@@ -130,15 +130,18 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
     except Exception as e:
         return False, f"Error: {e}", None
 
-st.title("QA Assistant Chatbot 🤖")
-st.write("Search or select a module to view QA test scenarios.")
+# ============================================
+# PAGE TITLE & DESCRIPTION
+# ============================================
+st.title("🤖 Agentic QA Automation Platform")
+st.write("Automate your end-to-end QA workflow using specialised AI agents. Describe your feature once, and the QA Orchestrator coordinates multiple AI agents to analyse requirements, generate test cases, assess testing risk, create Azure DevOps test plans, and produce a complete QA report.")
 
 # ============================================
 # AGENTIC QA AUTOMATION PLATFORM
 # ============================================
 st.write("---")
-st.write("## 🤖 Agentic QA Automation Platform")
-st.write("Describe a feature once. The AI agent autonomously runs the full QA pipeline: requirement gathering → analysis → 30 test cases → risk analysis → Azure DevOps test plan — all without manual steps.")
+st.write("## 🚀 QA Orchestrator Agent")
+st.write("Describe a feature once. The agent autonomously runs the full QA pipeline: requirement gathering → analysis → 30 test cases → risk analysis → Azure DevOps test plan.")
 
 agent_feature = st.text_area(
     "Describe the feature you want to test:",
@@ -160,7 +163,6 @@ if st.button("🚀 Run QA Agent"):
         agent_log = []
         agent_results = {}
 
-        # STEP 1: Generate Structured Requirement
         with st.status("🤖 Agent running full QA pipeline...", expanded=True) as status:
             st.write("**Step 1/5:** Gathering and structuring requirement...")
             rg_output = call_openai(
@@ -170,7 +172,6 @@ if st.button("🚀 Run QA Agent"):
             agent_results["requirement"] = rg_output
             agent_log.append("✅ Requirement gathered and structured")
 
-            # STEP 2: Challenge the Requirement
             st.write("**Step 2/5:** Analysing and challenging requirement...")
             ra_output = call_openai(
                 "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
@@ -179,7 +180,6 @@ if st.button("🚀 Run QA Agent"):
             agent_results["analysis"] = ra_output
             agent_log.append("✅ Requirement analysed and challenged")
 
-            # STEP 3: Generate 30 Test Cases
             st.write("**Step 3/5:** Generating 30 test cases (10 positive, 10 negative, 10 edge cases)...")
             tc_output = call_openai(
                 "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
@@ -188,27 +188,24 @@ if st.button("🚀 Run QA Agent"):
             agent_results["test_cases"] = tc_output
             agent_log.append("✅ 30 test cases generated")
 
-            # STEP 4: Risk Analysis
             st.write("**Step 4/5:** Running test coverage risk analysis...")
             risk_output = call_openai(
-                "You are a senior QA risk analyst. Given a feature description, identify 5-8 key risk areas within that feature. Return ONLY a valid JSON array with no markdown, no code fences. Each item must have: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
-                f"Analyse testing risk areas for this feature: {agent_feature}"
+                "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
+                f"Analyse testing risk areas for: {agent_feature}"
             )
             try:
                 risk_data = extract_json_array(risk_output)
                 risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
-                risk_df = risk_df.sort_values("Risk Score", ascending=False)
-                agent_results["risk_df"] = risk_df
+                agent_results["risk_df"] = risk_df.sort_values("Risk Score", ascending=False)
                 agent_log.append("✅ Risk analysis completed")
             except Exception:
                 agent_results["risk_df"] = None
                 agent_results["risk_raw"] = risk_output
                 agent_log.append("⚠️ Risk analysis completed (raw format)")
 
-            # STEP 5: Create Azure DevOps Test Plan
             st.write("**Step 5/5:** Creating Azure DevOps Test Plan...")
             tc_json_output = call_openai(
-                "You are a senior QA engineer. Generate structured test cases. Return ONLY a valid JSON array, no markdown, no code fences. Each item must have: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result (single string). Generate exactly 10 test cases covering positive, negative and edge scenarios.",
+                "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
                 f"Generate 10 structured test cases for: {agent_feature}"
             )
             try:
@@ -227,32 +224,25 @@ if st.button("🚀 Run QA Agent"):
 
             status.update(label="✅ QA Agent completed all steps!", state="complete")
 
-        # DISPLAY RESULTS
         st.write("---")
         st.write("## 📊 Agent Report")
-
         for log_item in agent_log:
             st.write(log_item)
 
         with st.expander("📄 Structured Requirement"):
             st.write(agent_results.get("requirement", ""))
-
         with st.expander("🧠 Requirement Analysis"):
             st.write(agent_results.get("analysis", ""))
-
         with st.expander("🧪 Generated Test Cases (30)"):
             st.code(agent_results.get("test_cases", ""))
-
         if agent_results.get("risk_df") is not None:
             with st.expander("🎯 Risk Analysis"):
                 st.dataframe(agent_results["risk_df"], use_container_width=True)
-
         if agent_results.get("devops_success"):
             st.success(agent_results.get("devops_message", ""))
         else:
             st.error(agent_results.get("devops_message", ""))
 
-        # Download full report
         full_report = f"""QA AGENT REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Feature: {agent_feature}
@@ -272,121 +262,119 @@ GENERATED TEST CASES
 {'='*60}
 {agent_results.get('test_cases', '')}
 """
-        st.download_button(
-            "⬇️ Download Full Agent Report",
-            full_report,
-            "qa_agent_report.txt"
-        )
+        st.download_button("⬇️ Download Full Agent Report", full_report, "qa_agent_report.txt")
 
-        st.session_state["agent_ran"] = True
-
+# ============================================
+# QA KNOWLEDGE BASE (formerly search)
+# ============================================
 st.write("---")
+st.write("## 📚 QA Knowledge Base")
+st.write("Search predefined QA scenarios and testing guidance by keyword.")
+
+query = st.text_input("Search by keyword:", key="search_box")
+st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
+
+if st.button("Clear Search", key="clear_btn"):
+    if "search_box" in st.session_state:
+        del st.session_state["search_box"]
+    st.rerun()
+
+if query:
+    query = query.lower().replace("-", " ")
+    results = []
+    download_text = ""
+    filter_type = None
+    if "positive" in query:
+        filter_type = "positive"
+    elif "negative" in query:
+        filter_type = "negative"
+    elif "edge" in query:
+        filter_type = "edge"
+    matched_module = None
+    if "ui non functional" in query:
+        matched_module = "ui non-functional"
+    elif query.strip() in ["ui", "frontend"] or "ui " in query:
+        matched_module = "ui"
+    elif "regression" in query:
+        matched_module = "regression"
+    elif "accessibility" in query:
+        matched_module = "accessibility"
+    elif "cross site scripting" in query or "xss" in query:
+        matched_module = "cross site scripting"
+    elif "data security" in query:
+        matched_module = "data security"
+    elif "api security" in query:
+        matched_module = "api security"
+    elif "checkout" in query or "payment" in query:
+        matched_module = "checkout"
+    elif "upload" in query:
+        matched_module = "upload"
+    elif "download" in query:
+        matched_module = "download"
+    elif "search" in query:
+        matched_module = "search"
+    elif "login" in query:
+        matched_module = "login"
+    elif "logout" in query:
+        matched_module = "logout"
+    elif "registration" in query:
+        matched_module = "registration"
+    elif "password" in query:
+        matched_module = "password reset"
+    elif "vehicle" in query:
+        matched_module = "vehicle"
+    elif "order" in query:
+        matched_module = "order"
+    elif "api" in query:
+        matched_module = "api"
+    elif "database" in query:
+        matched_module = "database"
+    elif "performance" in query:
+        matched_module = "performance"
+    elif "session" in query:
+        matched_module = "session"
+    elif "authentication" in query or "authorization" in query:
+        matched_module = "authentication"
+    elif "security" in query:
+        matched_module = "security"
+    module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
+    keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
+    for section in sections:
+        section_text = section.lower().replace("-", " ")
+        title = section.strip().split("\n")[0].lower().replace("-", " ")
+        if "all" in query:
+            results.append(section)
+            continue
+        if matched_module:
+            keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
+            if any(word in title for word in keywords):
+                if matched_module == "accessibility" and "accessibility" not in title:
+                    continue
+                if matched_module == "regression" and "regression" not in title:
+                    continue
+                if filter_type:
+                    if filter_type in title or filter_type in section_text:
+                        results.append(section)
+                else:
+                    results.append(section)
+    results = list(dict.fromkeys(results))
+    st.write(f"✅ {len(results)} results found")
+    if results:
+        for sec in results:
+            st.code(sec)
+            st.write("---")
+            download_text += sec + "\n\n"
+        st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
+    else:
+        st.warning("No results found.")
 
 # ============================================
 # INDIVIDUAL TOOLS (collapsible)
 # ============================================
+st.write("---")
 with st.expander("🔧 Individual QA Tools"):
     st.write("Use these tools individually if you prefer manual control over each step.")
 
-    query = st.text_input("Search or ask a QA question:", key="search_box")
-    st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
-
-    if st.button("Clear Search", key="clear_btn"):
-        if "search_box" in st.session_state:
-            del st.session_state["search_box"]
-        st.rerun()
-
-    if query:
-        query = query.lower().replace("-", " ")
-        st.write("### Suggested Test Scenarios")
-        results = []
-        download_text = ""
-        filter_type = None
-        if "positive" in query:
-            filter_type = "positive"
-        elif "negative" in query:
-            filter_type = "negative"
-        elif "edge" in query:
-            filter_type = "edge"
-        matched_module = None
-        if "ui non functional" in query:
-            matched_module = "ui non-functional"
-        elif query.strip() in ["ui", "frontend"] or "ui " in query:
-            matched_module = "ui"
-        elif "regression" in query:
-            matched_module = "regression"
-        elif "accessibility" in query:
-            matched_module = "accessibility"
-        elif "cross site scripting" in query or "xss" in query:
-            matched_module = "cross site scripting"
-        elif "data security" in query:
-            matched_module = "data security"
-        elif "api security" in query:
-            matched_module = "api security"
-        elif "checkout" in query or "payment" in query:
-            matched_module = "checkout"
-        elif "upload" in query:
-            matched_module = "upload"
-        elif "download" in query:
-            matched_module = "download"
-        elif "search" in query:
-            matched_module = "search"
-        elif "login" in query:
-            matched_module = "login"
-        elif "logout" in query:
-            matched_module = "logout"
-        elif "registration" in query:
-            matched_module = "registration"
-        elif "password" in query:
-            matched_module = "password reset"
-        elif "vehicle" in query:
-            matched_module = "vehicle"
-        elif "order" in query:
-            matched_module = "order"
-        elif "api" in query:
-            matched_module = "api"
-        elif "database" in query:
-            matched_module = "database"
-        elif "performance" in query:
-            matched_module = "performance"
-        elif "session" in query:
-            matched_module = "session"
-        elif "authentication" in query or "authorization" in query:
-            matched_module = "authentication"
-        elif "security" in query:
-            matched_module = "security"
-        module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
-        keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
-        for section in sections:
-            section_text = section.lower().replace("-", " ")
-            title = section.strip().split("\n")[0].lower().replace("-", " ")
-            if "all" in query:
-                results.append(section)
-                continue
-            if matched_module:
-                keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
-                if any(word in title for word in keywords):
-                    if matched_module == "accessibility" and "accessibility" not in title:
-                        continue
-                    if matched_module == "regression" and "regression" not in title:
-                        continue
-                    if filter_type:
-                        if filter_type in title or filter_type in section_text:
-                            results.append(section)
-                    else:
-                        results.append(section)
-        results = list(dict.fromkeys(results))
-        st.write(f"✅ {len(results)} results found")
-        if results:
-            for sec in results:
-                st.code(sec)
-                st.write("---")
-                download_text += sec + "\n\n"
-            st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
-        else:
-            st.warning("No results found.")
-
-    st.write("---")
     st.write("### 📝 Requirement Gathering")
     rough_idea = st.text_area("Describe your rough idea:", placeholder="e.g. We need users to reset their password", key="rg_input")
     if st.button("Generate Structured Requirement"):
