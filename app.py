@@ -126,423 +126,447 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
             task_response = requests.post(task_url, headers=headers, json=task_body)
             if task_response.status_code in [200, 201]:
                 created_count += 1
-        return True, f"✅ Test Plan created as Epic #{epic_id} with {created_count} Tasks! [View in Azure DevOps]({epic_url_view})"
+        return True, f"✅ Test Plan created as Epic #{epic_id} with {created_count} Tasks! [View in Azure DevOps]({epic_url_view})", epic_id
     except Exception as e:
-        return False, f"Error: {e}"
+        return False, f"Error: {e}", None
 
 st.title("QA Assistant Chatbot 🤖")
 st.write("Search or select a module to view QA test scenarios.")
 
-query = st.text_input("Search or ask a QA question:", key="search_box")
-st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
-
-if st.button("Clear Search", key="clear_btn"):
-    if "search_box" in st.session_state:
-        del st.session_state["search_box"]
-    st.rerun()
-
-if query:
-    query = query.lower().replace("-", " ")
-    st.write("### Suggested Test Scenarios")
-    results = []
-    download_text = ""
-    filter_type = None
-    if "positive" in query:
-        filter_type = "positive"
-    elif "negative" in query:
-        filter_type = "negative"
-    elif "edge" in query:
-        filter_type = "edge"
-    matched_module = None
-    if "ui non functional" in query:
-        matched_module = "ui non-functional"
-    elif query.strip() in ["ui", "frontend"] or "ui " in query:
-        matched_module = "ui"
-    elif "regression" in query:
-        matched_module = "regression"
-    elif "accessibility" in query:
-        matched_module = "accessibility"
-    elif "cross site scripting" in query or "xss" in query:
-        matched_module = "cross site scripting"
-    elif "data security" in query:
-        matched_module = "data security"
-    elif "api security" in query:
-        matched_module = "api security"
-    elif "checkout" in query or "payment" in query:
-        matched_module = "checkout"
-    elif "upload" in query:
-        matched_module = "upload"
-    elif "download" in query:
-        matched_module = "download"
-    elif "search" in query:
-        matched_module = "search"
-    elif "login" in query:
-        matched_module = "login"
-    elif "logout" in query:
-        matched_module = "logout"
-    elif "registration" in query:
-        matched_module = "registration"
-    elif "password" in query:
-        matched_module = "password reset"
-    elif "vehicle" in query:
-        matched_module = "vehicle"
-    elif "order" in query:
-        matched_module = "order"
-    elif "api" in query:
-        matched_module = "api"
-    elif "database" in query:
-        matched_module = "database"
-    elif "performance" in query:
-        matched_module = "performance"
-    elif "session" in query:
-        matched_module = "session"
-    elif "authentication" in query or "authorization" in query:
-        matched_module = "authentication"
-    elif "security" in query:
-        matched_module = "security"
-    module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
-    keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
-    for section in sections:
-        section_text = section.lower().replace("-", " ")
-        title = section.strip().split("\n")[0].lower().replace("-", " ")
-        if "all" in query:
-            results.append(section)
-            continue
-        if matched_module:
-            keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
-            if any(word in title for word in keywords):
-                if matched_module == "accessibility" and "accessibility" not in title:
-                    continue
-                if matched_module == "regression" and "regression" not in title:
-                    continue
-                if filter_type:
-                    if filter_type in title or filter_type in section_text:
-                        results.append(section)
-                else:
-                    results.append(section)
-    results = list(dict.fromkeys(results))
-    st.write(f"✅ {len(results)} results found")
-    if results:
-        for sec in results:
-            st.code(sec)
-            st.write("---")
-            download_text += sec + "\n\n"
-        st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
-    else:
-        st.warning("No results found. Try using different keywords or select a module.")
-
 # ============================================
-# REQUIREMENT GATHERING
+# AGENTIC QA AUTOMATION PLATFORM
 # ============================================
 st.write("---")
-st.write("## 📝 Requirement Gathering")
-st.write("Describe a rough idea or business need. AI will turn it into a properly structured requirement with user stories, actors, and goals.")
+st.write("## 🤖 Agentic QA Automation Platform")
+st.write("Describe a feature once. The AI agent autonomously runs the full QA pipeline: requirement gathering → analysis → 30 test cases → risk analysis → Azure DevOps test plan — all without manual steps.")
 
-rough_idea = st.text_area(
-    "Describe your rough idea or business need:",
-    placeholder="e.g. We need users to be able to reset their password if they forget it",
-    key="rg_input"
+agent_feature = st.text_area(
+    "Describe the feature you want to test:",
+    placeholder="e.g. User can book a car service appointment online",
+    key="agent_input"
 )
 
-if st.button("Generate Structured Requirement"):
-    if not rough_idea.strip():
-        st.warning("Please describe your idea first.")
-    else:
-        with st.spinner("Generating structured requirement..."):
-            system_prompt = "You are a senior business analyst. Given a rough idea or business need, produce a complete, well-structured software requirement document with these exact sections: 1. Requirement Title, 2. Business Objective (why this is needed), 3. Actors (who is involved), 4. User Stories (at least 3, in 'As a... I want to... So that...' format), 5. Functional Requirements (numbered list of what the system must do), 6. Non-Functional Requirements (performance, security, usability), 7. Constraints and Assumptions, 8. Out of Scope. Format each section with a clear bold header. Be specific and professional."
-            user_prompt = f"Turn this rough idea into a structured requirement:\n\n{rough_idea}"
-            rg_output = call_openai(system_prompt, user_prompt)
-
-        st.session_state["rg_output"] = rg_output
-        st.session_state["rg_idea"] = rough_idea
-
-if "rg_output" in st.session_state:
-    st.write("### Structured Requirement")
-    st.write(st.session_state["rg_output"])
-    st.download_button(
-        "⬇️ Download Requirement Document",
-        st.session_state["rg_output"],
-        "requirement_document.txt"
-    )
-    feedback_buttons("Requirement Gathering", st.session_state.get("rg_idea", ""), key_suffix="rg")
-
-# ============================================
-# AI REQUIREMENT ANALYSIS ("CHALLENGE MY REQUIREMENT")
-# ============================================
-st.write("---")
-st.write("## 🧠 Challenge My Requirement")
-st.write("Paste a requirement or user story. AI will critique it for ambiguity, missing acceptance criteria, and untestable language.")
-
-requirement_text = st.text_area(
-    "Paste your requirement or user story:",
-    placeholder="e.g. As a user, I want to reset my password so I can log back in."
+agent_plan_name = st.text_input(
+    "Azure DevOps Test Plan Name:",
+    placeholder="e.g. Car Booking Feature - Sprint 1"
 )
 
-if st.button("Challenge This Requirement"):
-    if not requirement_text.strip():
-        st.warning("Please paste a requirement first.")
-    else:
-        with st.spinner("Analyzing requirement..."):
-            system_prompt = "You are a senior QA engineer reviewing a requirement or user story before it goes into development. Critique it constructively. Cover: 1. Ambiguity - any vague or unclear wording. 2. Missing acceptance criteria - what's not defined. 3. Untestable language - words that can't be verified objectively. 4. Edge cases not covered - what scenarios are missing. Format your response with clear headers for each section above. Be specific and constructive, not just critical."
-            user_prompt = f"Challenge this requirement:\n\n{requirement_text}"
-            analysis_output = call_openai(system_prompt, user_prompt)
-
-        st.session_state["ra_output"] = analysis_output
-        st.session_state["ra_requirement"] = requirement_text
-
-if "ra_output" in st.session_state:
-    st.write("### Requirement Analysis")
-    st.write(st.session_state["ra_output"])
-    feedback_buttons("Requirement Analysis", st.session_state.get("ra_requirement", ""), key_suffix="ra")
-
-# ============================================
-# AI ACCEPTANCE CRITERIA GENERATOR
-# ============================================
-st.write("---")
-st.write("## ✅ Generate Acceptance Criteria")
-st.write("Paste a requirement or user story. AI will generate clear acceptance criteria in your chosen format.")
-
-ac_requirement_text = st.text_area(
-    "Paste your requirement or user story:",
-    placeholder="e.g. As a user, I want to reset my password so I can log back in.",
-    key="ac_input"
-)
-
-ac_format = st.radio("Choose format:", ["Given/When/Then (Gherkin)", "Simple Checklist"], horizontal=True)
-
-if st.button("Generate Acceptance Criteria"):
-    if not ac_requirement_text.strip():
-        st.warning("Please paste a requirement first.")
-    else:
-        with st.spinner("Generating acceptance criteria..."):
-            if ac_format == "Given/When/Then (Gherkin)":
-                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria in Gherkin format (Given/When/Then). You MUST produce EXACTLY 6 scenarios, no fewer - covering the main happy path, validation and error cases, and edge cases. Count your scenarios before finishing; if you have fewer than 6, add more. Format each scenario as: Scenario: <short title>, then Given <context>, When <action>, Then <expected outcome>. Separate scenarios with a blank line."
-            else:
-                system_prompt = "You are a senior business analyst. Given a requirement or user story, write clear acceptance criteria as a simple checklist. You MUST produce EXACTLY 10 checklist items, no fewer, covering the main happy path, validation, and edge cases. Count your items before finishing; if you have fewer than 10, add more. Each line should be a single, testable, unambiguous criterion starting with 'The system should...' or 'The user can...'."
-            user_prompt = f"Write acceptance criteria for this requirement:\n\n{ac_requirement_text}"
-            ac_output = call_openai(system_prompt, user_prompt)
-
-        st.session_state["ac_output"] = ac_output
-        st.session_state["ac_requirement"] = ac_requirement_text
-
-if "ac_output" in st.session_state:
-    st.write("### Generated Acceptance Criteria")
-    formatted_output = st.session_state["ac_output"].replace("\nGiven", "  \nGiven").replace("\nWhen", "  \nWhen").replace("\nThen", "  \nThen").replace("\nAnd", "  \nAnd")
-    st.markdown(formatted_output)
-    st.download_button("⬇️ Download Acceptance Criteria", st.session_state["ac_output"], "acceptance_criteria.txt")
-    feedback_buttons("Acceptance Criteria Generator", st.session_state.get("ac_requirement", ""), key_suffix="ac")
-
-# ============================================
-# AI TEST CASE GENERATION
-# ============================================
-st.write("---")
-st.write("## 🤖 AI Test Case Generator")
-st.write("Describe a feature and get fresh AI-generated test scenarios in the same style as above.")
-
-feature_description = st.text_area("Describe the feature to test:", placeholder="e.g. User can apply a discount code at checkout")
-
-if st.button("Generate Test Cases with AI"):
-    if not feature_description.strip():
+if st.button("🚀 Run QA Agent"):
+    if not agent_feature.strip():
         st.warning("Please describe a feature first.")
-    else:
-        with st.spinner("Generating test cases..."):
-            system_prompt = "You are a senior QA engineer. You MUST generate EXACTLY 10 Positive scenarios, EXACTLY 10 Negative scenarios, and EXACTLY 10 Edge Case scenarios. That is 30 scenarios total, no fewer. This is a strict requirement, not a suggestion. Count your bullets before finishing. If you have fewer than 10 in any category, add more before stopping. Format your output EXACTLY like this: MODULE NAME - POSITIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - NEGATIVE SCENARIOS then 10 lines each starting with a dash, then a blank line, then MODULE NAME - EDGE CASES then 10 lines each starting with a dash. Replace MODULE NAME with the feature name. Each bullet must be a distinct, specific, realistic scenario, no duplicates, no filler. Start each with Verify where natural."
-            user_prompt = f"Generate exactly 30 QA test scenarios (10 positive, 10 negative, 10 edge cases) for this feature: {feature_description}"
-            ai_output = call_openai(system_prompt, user_prompt)
-
-        st.session_state["tc_output"] = ai_output
-        st.session_state["tc_feature"] = feature_description
-
-if "tc_output" in st.session_state:
-    st.write("### Generated Test Scenarios")
-    st.code(st.session_state["tc_output"])
-    st.download_button("⬇️ Download AI Test Scenarios", st.session_state["tc_output"], "ai_generated_test_scenarios.txt")
-    feedback_buttons("Test Case Generator", st.session_state.get("tc_feature", ""), key_suffix="tc")
-
-# ============================================
-# USE CASE GENERATOR
-# ============================================
-st.write("---")
-st.write("## 📋 Use Case Generator")
-st.write("Describe a feature and AI will generate a structured use case document.")
-
-uc_feature = st.text_area("Describe the feature:", placeholder="e.g. User can reset their password via email link", key="uc_input")
-
-if st.button("Generate Use Case"):
-    if not uc_feature.strip():
-        st.warning("Please describe a feature first.")
-    else:
-        with st.spinner("Generating use case..."):
-            system_prompt = "You are a senior business analyst. Given a feature description, generate a complete, structured use case document with these exact sections: Use Case Name, Actor(s), Preconditions, Main Success Scenario (numbered steps), Alternative Flows (numbered), Exception Flows (numbered), Postconditions, and Business Rules. Be specific, realistic and thorough. Format each section with a clear bold header."
-            user_prompt = f"Generate a full structured use case for this feature: {uc_feature}"
-            uc_output = call_openai(system_prompt, user_prompt)
-
-        st.session_state["uc_output"] = uc_output
-        st.session_state["uc_feature"] = uc_feature
-
-if "uc_output" in st.session_state:
-    st.write("### Generated Use Case")
-    st.write(st.session_state["uc_output"])
-    st.download_button("⬇️ Download Use Case", st.session_state["uc_output"], "use_case.txt")
-    feedback_buttons("Use Case Generator", st.session_state.get("uc_feature", ""), key_suffix="uc")
-
-# ============================================
-# TEST COVERAGE RISK ANALYSIS
-# ============================================
-st.write("---")
-st.write("## 🎯 Test Coverage Risk Analysis")
-st.write("Paste a list of features or modules. AI will predict which are highest risk and need the most testing attention.")
-
-risk_features = st.text_area("Paste your features/modules (one per line):", placeholder="e.g.\nUser Login\nPassword Reset\nPayment Checkout\nProduct Search\nUser Profile\nAdmin Dashboard", key="risk_input")
-
-if st.button("Analyse Risk"):
-    if not risk_features.strip():
-        st.warning("Please paste a list of features first.")
-    else:
-        with st.spinner("Analysing test coverage risk..."):
-            system_prompt = "You are a senior QA engineer and risk analyst. Given a list of software features or modules, analyse each one for testing risk. For each feature, provide: Risk Level (Critical/High/Medium/Low), Risk Score (1-10), Key Risk Factors (why it is risky), Recommended Test Focus (what types of testing to prioritise), and Estimated Test Effort (Low/Medium/High). Return ONLY a valid JSON array with no markdown, no code fences, no commentary. Each item must have exactly these fields: feature, risk_level, risk_score, risk_factors, recommended_focus, test_effort."
-            user_prompt = f"Analyse the testing risk for each of these features:\n\n{risk_features}"
-            risk_output = call_openai(system_prompt, user_prompt)
-
-        try:
-            risk_data = extract_json_array(risk_output)
-            risk_df = pd.DataFrame(risk_data)
-            risk_df = risk_df.rename(columns={"feature": "Feature", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Test Focus", "test_effort": "Test Effort"})
-            risk_df = risk_df.sort_values("Risk Score", ascending=False)
-            st.session_state["risk_df"] = risk_df
-        except Exception:
-            st.session_state["risk_df"] = None
-            st.session_state["risk_raw"] = risk_output
-
-if st.session_state.get("risk_df") is not None:
-    df = st.session_state["risk_df"]
-    st.write("### Risk Analysis Results")
-    st.dataframe(df, use_container_width=True)
-    buffer = io.BytesIO()
-    df.to_excel(buffer, index=False, sheet_name="Risk Analysis")
-    buffer.seek(0)
-    st.download_button("⬇️ Download Risk Analysis (Excel)", buffer, "test_coverage_risk.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    feedback_buttons("Risk Analysis", key_suffix="risk")
-elif "risk_raw" in st.session_state:
-    st.warning("Could not parse risk analysis. Raw response below:")
-    st.code(st.session_state["risk_raw"])
-
-# ============================================
-# AUTO-CREATE AZURE DEVOPS TEST PLAN (as Epic + Tasks)
-# ============================================
-st.write("---")
-st.write("## 🗂️ Auto-Create Azure DevOps Test Plan")
-st.write("Describe a feature. AI generates test cases and automatically creates an Epic with linked Tasks in Azure DevOps.")
-
-tp_feature = st.text_area("Describe the feature to create a test plan for:", placeholder="e.g. User checkout and payment process", key="tp_input")
-tp_plan_name = st.text_input("Test Plan Name:", placeholder="e.g. Checkout Feature - Sprint 1 Test Plan")
-
-if st.button("🗂️ Generate & Create Test Plan in Azure DevOps"):
-    if not tp_feature.strip():
-        st.warning("Please describe a feature first.")
-    elif not tp_plan_name.strip():
+    elif not agent_plan_name.strip():
         st.warning("Please enter a test plan name.")
     else:
-        with st.spinner("Generating test cases and creating Azure DevOps Test Plan..."):
-            system_prompt = "You are a senior QA engineer. Generate structured test cases for the given feature. Return ONLY a valid JSON array with no markdown, no code fences. Each item must have exactly these fields: test_scenario (short title), steps (numbered steps as a single string separated by newlines), expected_result (single string). Generate at least 5 test cases covering positive, negative and edge scenarios."
-            user_prompt = f"Generate structured test cases for: {tp_feature}"
-            tc_output = call_openai(system_prompt, user_prompt)
+        agent_log = []
+        agent_results = {}
 
-        try:
-            tc_data = extract_json_array(tc_output)
-            success, message = create_azure_devops_task_plan(tp_plan_name, tc_data)
+        # STEP 1: Generate Structured Requirement
+        with st.status("🤖 Agent running full QA pipeline...", expanded=True) as status:
+            st.write("**Step 1/5:** Gathering and structuring requirement...")
+            rg_output = call_openai(
+                "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
+                f"Structure this requirement: {agent_feature}"
+            )
+            agent_results["requirement"] = rg_output
+            agent_log.append("✅ Requirement gathered and structured")
+
+            # STEP 2: Challenge the Requirement
+            st.write("**Step 2/5:** Analysing and challenging requirement...")
+            ra_output = call_openai(
+                "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
+                f"Challenge this requirement:\n\n{rg_output}"
+            )
+            agent_results["analysis"] = ra_output
+            agent_log.append("✅ Requirement analysed and challenged")
+
+            # STEP 3: Generate 30 Test Cases
+            st.write("**Step 3/5:** Generating 30 test cases (10 positive, 10 negative, 10 edge cases)...")
+            tc_output = call_openai(
+                "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
+                f"Generate exactly 30 QA test scenarios for: {agent_feature}"
+            )
+            agent_results["test_cases"] = tc_output
+            agent_log.append("✅ 30 test cases generated")
+
+            # STEP 4: Risk Analysis
+            st.write("**Step 4/5:** Running test coverage risk analysis...")
+            risk_output = call_openai(
+                "You are a senior QA risk analyst. Given a feature description, identify 5-8 key risk areas within that feature. Return ONLY a valid JSON array with no markdown, no code fences. Each item must have: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
+                f"Analyse testing risk areas for this feature: {agent_feature}"
+            )
+            try:
+                risk_data = extract_json_array(risk_output)
+                risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
+                risk_df = risk_df.sort_values("Risk Score", ascending=False)
+                agent_results["risk_df"] = risk_df
+                agent_log.append("✅ Risk analysis completed")
+            except Exception:
+                agent_results["risk_df"] = None
+                agent_results["risk_raw"] = risk_output
+                agent_log.append("⚠️ Risk analysis completed (raw format)")
+
+            # STEP 5: Create Azure DevOps Test Plan
+            st.write("**Step 5/5:** Creating Azure DevOps Test Plan...")
+            tc_json_output = call_openai(
+                "You are a senior QA engineer. Generate structured test cases. Return ONLY a valid JSON array, no markdown, no code fences. Each item must have: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result (single string). Generate exactly 10 test cases covering positive, negative and edge scenarios.",
+                f"Generate 10 structured test cases for: {agent_feature}"
+            )
+            try:
+                tc_json_data = extract_json_array(tc_json_output)
+                success, message, epic_id = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
+                agent_results["devops_success"] = success
+                agent_results["devops_message"] = message
+                if success:
+                    agent_log.append(f"✅ Azure DevOps Test Plan created (Epic #{epic_id})")
+                else:
+                    agent_log.append(f"⚠️ Azure DevOps: {message}")
+            except Exception as e:
+                agent_results["devops_success"] = False
+                agent_results["devops_message"] = f"Could not create test plan: {e}"
+                agent_log.append("⚠️ Azure DevOps test plan creation failed")
+
+            status.update(label="✅ QA Agent completed all steps!", state="complete")
+
+        # DISPLAY RESULTS
+        st.write("---")
+        st.write("## 📊 Agent Report")
+
+        for log_item in agent_log:
+            st.write(log_item)
+
+        with st.expander("📄 Structured Requirement"):
+            st.write(agent_results.get("requirement", ""))
+
+        with st.expander("🧠 Requirement Analysis"):
+            st.write(agent_results.get("analysis", ""))
+
+        with st.expander("🧪 Generated Test Cases (30)"):
+            st.code(agent_results.get("test_cases", ""))
+
+        if agent_results.get("risk_df") is not None:
+            with st.expander("🎯 Risk Analysis"):
+                st.dataframe(agent_results["risk_df"], use_container_width=True)
+
+        if agent_results.get("devops_success"):
+            st.success(agent_results.get("devops_message", ""))
+        else:
+            st.error(agent_results.get("devops_message", ""))
+
+        # Download full report
+        full_report = f"""QA AGENT REPORT
+Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+Feature: {agent_feature}
+
+{'='*60}
+STRUCTURED REQUIREMENT
+{'='*60}
+{agent_results.get('requirement', '')}
+
+{'='*60}
+REQUIREMENT ANALYSIS
+{'='*60}
+{agent_results.get('analysis', '')}
+
+{'='*60}
+GENERATED TEST CASES
+{'='*60}
+{agent_results.get('test_cases', '')}
+"""
+        st.download_button(
+            "⬇️ Download Full Agent Report",
+            full_report,
+            "qa_agent_report.txt"
+        )
+
+        st.session_state["agent_ran"] = True
+
+st.write("---")
+
+# ============================================
+# INDIVIDUAL TOOLS (collapsible)
+# ============================================
+with st.expander("🔧 Individual QA Tools"):
+    st.write("Use these tools individually if you prefer manual control over each step.")
+
+    query = st.text_input("Search or ask a QA question:", key="search_box")
+    st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
+
+    if st.button("Clear Search", key="clear_btn"):
+        if "search_box" in st.session_state:
+            del st.session_state["search_box"]
+        st.rerun()
+
+    if query:
+        query = query.lower().replace("-", " ")
+        st.write("### Suggested Test Scenarios")
+        results = []
+        download_text = ""
+        filter_type = None
+        if "positive" in query:
+            filter_type = "positive"
+        elif "negative" in query:
+            filter_type = "negative"
+        elif "edge" in query:
+            filter_type = "edge"
+        matched_module = None
+        if "ui non functional" in query:
+            matched_module = "ui non-functional"
+        elif query.strip() in ["ui", "frontend"] or "ui " in query:
+            matched_module = "ui"
+        elif "regression" in query:
+            matched_module = "regression"
+        elif "accessibility" in query:
+            matched_module = "accessibility"
+        elif "cross site scripting" in query or "xss" in query:
+            matched_module = "cross site scripting"
+        elif "data security" in query:
+            matched_module = "data security"
+        elif "api security" in query:
+            matched_module = "api security"
+        elif "checkout" in query or "payment" in query:
+            matched_module = "checkout"
+        elif "upload" in query:
+            matched_module = "upload"
+        elif "download" in query:
+            matched_module = "download"
+        elif "search" in query:
+            matched_module = "search"
+        elif "login" in query:
+            matched_module = "login"
+        elif "logout" in query:
+            matched_module = "logout"
+        elif "registration" in query:
+            matched_module = "registration"
+        elif "password" in query:
+            matched_module = "password reset"
+        elif "vehicle" in query:
+            matched_module = "vehicle"
+        elif "order" in query:
+            matched_module = "order"
+        elif "api" in query:
+            matched_module = "api"
+        elif "database" in query:
+            matched_module = "database"
+        elif "performance" in query:
+            matched_module = "performance"
+        elif "session" in query:
+            matched_module = "session"
+        elif "authentication" in query or "authorization" in query:
+            matched_module = "authentication"
+        elif "security" in query:
+            matched_module = "security"
+        module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
+        keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
+        for section in sections:
+            section_text = section.lower().replace("-", " ")
+            title = section.strip().split("\n")[0].lower().replace("-", " ")
+            if "all" in query:
+                results.append(section)
+                continue
+            if matched_module:
+                keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
+                if any(word in title for word in keywords):
+                    if matched_module == "accessibility" and "accessibility" not in title:
+                        continue
+                    if matched_module == "regression" and "regression" not in title:
+                        continue
+                    if filter_type:
+                        if filter_type in title or filter_type in section_text:
+                            results.append(section)
+                    else:
+                        results.append(section)
+        results = list(dict.fromkeys(results))
+        st.write(f"✅ {len(results)} results found")
+        if results:
+            for sec in results:
+                st.code(sec)
+                st.write("---")
+                download_text += sec + "\n\n"
+            st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
+        else:
+            st.warning("No results found.")
+
+    st.write("---")
+    st.write("### 📝 Requirement Gathering")
+    rough_idea = st.text_area("Describe your rough idea:", placeholder="e.g. We need users to reset their password", key="rg_input")
+    if st.button("Generate Structured Requirement"):
+        if not rough_idea.strip():
+            st.warning("Please describe your idea first.")
+        else:
+            with st.spinner("Generating..."):
+                rg_output = call_openai("You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.", f"Structure this requirement: {rough_idea}")
+            st.session_state["rg_output"] = rg_output
+    if "rg_output" in st.session_state:
+        st.write(st.session_state["rg_output"])
+        st.download_button("⬇️ Download Requirement", st.session_state["rg_output"], "requirement.txt")
+        feedback_buttons("Requirement Gathering", key_suffix="rg")
+
+    st.write("---")
+    st.write("### 🧠 Challenge My Requirement")
+    requirement_text = st.text_area("Paste your requirement:", placeholder="e.g. As a user, I want to reset my password...", key="ra_input")
+    if st.button("Challenge This Requirement"):
+        if not requirement_text.strip():
+            st.warning("Please paste a requirement first.")
+        else:
+            with st.spinner("Analysing..."):
+                ra_output = call_openai("You are a senior QA engineer. Critique this requirement covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.", f"Challenge this requirement:\n\n{requirement_text}")
+            st.session_state["ra_output"] = ra_output
+    if "ra_output" in st.session_state:
+        st.write(st.session_state["ra_output"])
+        feedback_buttons("Requirement Analysis", key_suffix="ra")
+
+    st.write("---")
+    st.write("### ✅ Generate Acceptance Criteria")
+    ac_text = st.text_area("Paste your requirement:", placeholder="e.g. As a user, I want to reset my password...", key="ac_input")
+    ac_format = st.radio("Format:", ["Given/When/Then (Gherkin)", "Simple Checklist"], horizontal=True)
+    if st.button("Generate Acceptance Criteria"):
+        if not ac_text.strip():
+            st.warning("Please paste a requirement first.")
+        else:
+            with st.spinner("Generating..."):
+                if ac_format == "Given/When/Then (Gherkin)":
+                    sp = "You are a senior BA. Write exactly 6 Gherkin acceptance criteria scenarios (Given/When/Then). Format: Scenario: title, Given context, When action, Then outcome. Separate with blank lines."
+                else:
+                    sp = "You are a senior BA. Write exactly 10 acceptance criteria checklist items starting with 'The system should...' or 'The user can...'."
+                ac_output = call_openai(sp, f"Write acceptance criteria for:\n\n{ac_text}")
+            st.session_state["ac_output"] = ac_output
+    if "ac_output" in st.session_state:
+        formatted = st.session_state["ac_output"].replace("\nGiven", "  \nGiven").replace("\nWhen", "  \nWhen").replace("\nThen", "  \nThen").replace("\nAnd", "  \nAnd")
+        st.markdown(formatted)
+        st.download_button("⬇️ Download Acceptance Criteria", st.session_state["ac_output"], "acceptance_criteria.txt")
+        feedback_buttons("Acceptance Criteria", key_suffix="ac")
+
+    st.write("---")
+    st.write("### 🤖 AI Test Case Generator")
+    feature_desc = st.text_area("Describe the feature:", placeholder="e.g. User can apply a discount code at checkout", key="tc_input")
+    if st.button("Generate Test Cases"):
+        if not feature_desc.strip():
+            st.warning("Please describe a feature first.")
+        else:
+            with st.spinner("Generating 30 test cases..."):
+                tc_out = call_openai("You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify.", f"Generate exactly 30 QA test scenarios for: {feature_desc}")
+            st.session_state["tc_output"] = tc_out
+    if "tc_output" in st.session_state:
+        st.code(st.session_state["tc_output"])
+        st.download_button("⬇️ Download Test Cases", st.session_state["tc_output"], "test_cases.txt")
+        feedback_buttons("Test Case Generator", key_suffix="tc")
+
+    st.write("---")
+    st.write("### 📋 Use Case Generator")
+    uc_feat = st.text_area("Describe the feature:", placeholder="e.g. User can reset password via email", key="uc_input")
+    if st.button("Generate Use Case"):
+        if not uc_feat.strip():
+            st.warning("Please describe a feature first.")
+        else:
+            with st.spinner("Generating..."):
+                uc_out = call_openai("You are a senior BA. Generate a complete use case with: Use Case Name, Actor(s), Preconditions, Main Success Scenario, Alternative Flows, Exception Flows, Postconditions, Business Rules. Use bold headers.", f"Generate use case for: {uc_feat}")
+            st.session_state["uc_output"] = uc_out
+    if "uc_output" in st.session_state:
+        st.write(st.session_state["uc_output"])
+        st.download_button("⬇️ Download Use Case", st.session_state["uc_output"], "use_case.txt")
+        feedback_buttons("Use Case Generator", key_suffix="uc")
+
+    st.write("---")
+    st.write("### 🎯 Test Coverage Risk Analysis")
+    risk_feats = st.text_area("Paste features/modules (one per line):", placeholder="User Login\nPassword Reset\nPayment Checkout", key="risk_input")
+    if st.button("Analyse Risk"):
+        if not risk_feats.strip():
+            st.warning("Please paste features first.")
+        else:
+            with st.spinner("Analysing risk..."):
+                risk_out = call_openai("You are a senior QA risk analyst. Analyse each feature for testing risk. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).", f"Analyse risk for:\n\n{risk_feats}")
+            try:
+                risk_data = extract_json_array(risk_out)
+                risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Feature", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
+                st.session_state["risk_df"] = risk_df.sort_values("Risk Score", ascending=False)
+            except Exception:
+                st.session_state["risk_df"] = None
+                st.warning("Could not parse results.")
+                st.code(risk_out)
+    if st.session_state.get("risk_df") is not None:
+        st.dataframe(st.session_state["risk_df"], use_container_width=True)
+        buf = io.BytesIO()
+        st.session_state["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
+        buf.seek(0)
+        st.download_button("⬇️ Download Risk Analysis", buf, "risk_analysis.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        feedback_buttons("Risk Analysis", key_suffix="risk")
+
+    st.write("---")
+    st.write("### 📊 Export Test Cases to Excel")
+    export_text = st.text_area("Paste test scenarios to export:", placeholder="Paste test scenarios here...", key="export_input")
+    if st.button("Convert to Excel"):
+        if not export_text.strip():
+            st.warning("Please paste test scenarios first.")
+        else:
+            with st.spinner("Generating detailed steps..."):
+                xl_out = call_openai("You are a senior QA engineer. Process EVERY bullet in the input. Return ONLY valid JSON array, no markdown, no code fences, no trailing commas. Each item: module, category, test_scenario, steps (numbered steps separated by newlines), test_data (plain string or N/A), expected_result.", f"Convert EVERY scenario below:\n\n{export_text}")
+            try:
+                tcs = extract_json_array(xl_out)
+                df = pd.DataFrame(tcs)
+                for col in df.columns:
+                    df[col] = df[col].apply(flatten_value)
+                df.insert(0, "Test ID", [f"TC-{i+1:03d}" for i in range(len(df))])
+                df = df.rename(columns={"module": "Module", "category": "Category", "test_scenario": "Test Scenario", "steps": "Steps", "test_data": "Test Data", "expected_result": "Expected Result"})
+                df["Actual Result"] = ""
+                df["Status"] = ""
+                st.session_state["excel_df"] = df.reset_index(drop=True)
+            except Exception:
+                st.session_state["excel_df"] = None
+                st.warning("Could not parse results.")
+                st.code(xl_out)
+    if st.session_state.get("excel_df") is not None:
+        df = st.session_state["excel_df"]
+        st.write(f"### Preview ({len(df)} test cases)")
+        st.dataframe(df, use_container_width=True)
+        buf = io.BytesIO()
+        df.to_excel(buf, index=False, sheet_name="Test Cases")
+        buf.seek(0)
+        st.download_button("⬇️ Download Excel File", buf, "test_cases.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        feedback_buttons("Excel Export", key_suffix="excel")
+
+    st.write("---")
+    st.write("### 🗂️ Auto-Create Azure DevOps Test Plan")
+    tp_feat = st.text_area("Describe the feature:", placeholder="e.g. User checkout and payment process", key="tp_input")
+    tp_name = st.text_input("Test Plan Name:", placeholder="e.g. Checkout - Sprint 1 Test Plan")
+    if st.button("🗂️ Create Test Plan in Azure DevOps"):
+        if not tp_feat.strip() or not tp_name.strip():
+            st.warning("Please fill in both fields.")
+        else:
+            with st.spinner("Generating and creating test plan..."):
+                tp_out = call_openai("You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string), expected_result. Generate 5 test cases.", f"Generate test cases for: {tp_feat}")
+            try:
+                tp_data = extract_json_array(tp_out)
+                success, message, epic_id = create_azure_devops_task_plan(tp_name, tp_data)
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    st.write("---")
+    st.write("### 🐛 Bug Report")
+    bug_title = st.text_input("Bug Title:", placeholder="e.g. Login button unresponsive on mobile", key="bug_title")
+    bug_severity = st.selectbox("Severity:", ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"])
+    bug_desc = st.text_area("Bug Description:", placeholder="Describe what happened...", key="bug_desc")
+    bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Click Login\n3. Nothing happens", key="bug_steps")
+    if st.button("🐛 Log Bug to Azure DevOps"):
+        if not bug_title.strip() or not bug_desc.strip() or not bug_steps.strip():
+            st.warning("Please fill in all fields.")
+        else:
+            with st.spinner("Logging bug..."):
+                success, message = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps)
             if success:
                 st.success(message)
-                st.write("### Test Cases Created:")
-                tc_df = pd.DataFrame(tc_data)
-                st.dataframe(tc_df, use_container_width=True)
             else:
                 st.error(message)
-        except Exception as e:
-            st.error(f"Could not parse test cases: {e}")
-            st.code(tc_output)
 
 # ============================================
-# STRUCTURED OUTPUT: EXCEL EXPORT (AI-POWERED STEPS)
-# ============================================
-st.write("---")
-st.write("## 📊 Export Test Cases to Excel")
-st.write("Paste any test scenario text. AI will fill in real Steps, Test Data, and Expected Results, then export to Excel.")
-
-export_text = st.text_area("Paste test scenarios to export:", placeholder="Paste AI-generated or existing test scenarios here...")
-
-if st.button("Convert to Excel"):
-    if not export_text.strip():
-        st.warning("Please paste some test scenarios first.")
-    else:
-        with st.spinner("Generating detailed steps, test data and expected results..."):
-            system_prompt = "You are a senior QA engineer. You will be given a block of test scenario text, organized under headers like MODULE NAME - CATEGORY followed by dash-bulleted scenarios. You MUST process EVERY SINGLE bullet line in the input, do not skip or summarize any of them. For each individual bullet scenario, produce a structured test case with specific, actionable steps using concrete field names, button labels, and exact user actions. Each test case should have between 3 and 7 steps depending on complexity. For test_data, always use a single plain string value, never a nested object. If no specific data applies, use the string N/A in quotes. Return ONLY a valid JSON array, with absolutely no markdown formatting, no code fences, no commentary before or after, and no trailing commas. Each item in the array must have exactly these fields: module, category, test_scenario (the original bullet text), steps (numbered steps separated by newlines), test_data (a plain string), expected_result."
-            user_prompt = f"Convert EVERY scenario below into a structured test case:\n\n{export_text}"
-            ai_output = call_openai(system_prompt, user_prompt)
-
-        try:
-            test_cases = extract_json_array(ai_output)
-            df = pd.DataFrame(test_cases)
-            for col in df.columns:
-                df[col] = df[col].apply(flatten_value)
-            df.insert(0, "Test ID", [f"TC-{i+1:03d}" for i in range(len(df))])
-            df = df.rename(columns={"module": "Module", "category": "Category", "test_scenario": "Test Scenario", "steps": "Steps", "test_data": "Test Data", "expected_result": "Expected Result"})
-            df["Actual Result"] = ""
-            df["Status"] = ""
-            st.session_state["excel_df"] = df
-        except Exception:
-            st.session_state["excel_df"] = None
-            st.session_state["excel_raw"] = ai_output
-
-if st.session_state.get("excel_df") is not None:
-    df = st.session_state["excel_df"]
-    df = df.reset_index(drop=True)
-    st.write(f"### Preview ({len(df)} test cases)")
-    st.dataframe(df, use_container_width=True)
-    buffer = io.BytesIO()
-    df.to_excel(buffer, index=False, sheet_name="Test Cases")
-    buffer.seek(0)
-    st.download_button("⬇️ Download Excel File", buffer, "test_cases.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    feedback_buttons("Excel Export", key_suffix="excel")
-elif "excel_raw" in st.session_state:
-    st.warning("AI response couldn't be parsed into a table. Raw response below:")
-    st.code(st.session_state["excel_raw"])
-
-# ============================================
-# BUG REPORT — LOGS TO AZURE DEVOPS
-# ============================================
-st.write("---")
-st.write("## 🐛 Bug Report")
-st.write("Log a bug directly to Azure DevOps as a Work Item.")
-
-bug_title = st.text_input("Bug Title:", placeholder="e.g. Login button unresponsive on mobile")
-bug_severity = st.selectbox("Severity:", ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"])
-bug_description = st.text_area("Bug Description:", placeholder="Describe what happened...")
-bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Enter valid credentials\n3. Click Login button\n4. Nothing happens")
-
-if st.button("🐛 Log Bug to Azure DevOps"):
-    if not bug_title.strip():
-        st.warning("Please enter a bug title.")
-    elif not bug_description.strip():
-        st.warning("Please enter a bug description.")
-    elif not bug_steps.strip():
-        st.warning("Please enter steps to reproduce.")
-    else:
-        with st.spinner("Logging bug to Azure DevOps..."):
-            success, message = create_azure_devops_issue(title=bug_title, severity=bug_severity, description=bug_description, steps_to_reproduce=bug_steps)
-        if success:
-            st.success(message)
-        else:
-            st.error(message)
-
-# ============================================
-# FEEDBACK SUMMARY (ADMIN VIEW)
+# FEEDBACK SUMMARY
 # ============================================
 if st.session_state.feedback_log:
     st.write("---")
-    with st.expander("📋 View Feedback Log (for demo/admin purposes)"):
+    with st.expander("📋 Feedback Log"):
         feedback_df = pd.DataFrame(st.session_state.feedback_log)
         st.dataframe(feedback_df, use_container_width=True)
-        st.write(f"Total feedback collected: {len(st.session_state.feedback_log)}")
-        st.write(f"👍 Positive: {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'up')}")
-        st.write(f"👎 Negative: {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'down')}")
+        st.write(f"Total: {len(st.session_state.feedback_log)} | 👍 {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'up')} | 👎 {sum(1 for f in st.session_state.feedback_log if f['rating'] == 'down')}")
