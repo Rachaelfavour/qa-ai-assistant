@@ -140,7 +140,7 @@ st.write("Automate your end-to-end QA workflow using specialised AI agents. Desc
 # ============================================
 st.write("---")
 st.write("## 🚀 QA Orchestrator")
-st.write("Describe a feature once. The QA Orchestrator coordinates specialised AI agents to analyse requirements, generate test cases, assess risk, review quality, and create Azure DevOps artefacts automatically.")
+st.write("Describe a feature once or paste a requirement. The QA Orchestrator coordinates specialised AI agents to analyse requirements, generate test cases, assess risk, review quality, and create Azure DevOps artefacts automatically.")
 
 agent_feature = st.text_area(
     "Describe the feature you want to test:",
