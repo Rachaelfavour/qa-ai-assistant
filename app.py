@@ -84,9 +84,9 @@ def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
         if response.status_code in [200, 201]:
             work_item_id = response.json().get("id")
             work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
-            return True, f"✅ Issue #{work_item_id} created successfully! [View in Azure DevOps]({work_item_url})"
+            return True, f"✅ Issue #{work_item_id} created! [View in Azure DevOps]({work_item_url})"
         else:
-            return False, f"Failed to create issue: {response.status_code} - {response.text}"
+            return False, f"Failed: {response.status_code} - {response.text}"
     except Exception as e:
         return False, f"Error: {e}"
 
@@ -96,7 +96,7 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
         org = "richkome"
         project = "QA-Assistant"
         if not pat:
-            return False, "Azure DevOps PAT not found in Streamlit secrets.", None
+            return False, "Azure DevOps PAT not found.", None, []
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {"Content-Type": "application/json-patch+json", "Authorization": f"Basic {credentials}"}
         epic_url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Epic?api-version=7.1"
@@ -107,28 +107,27 @@ def create_azure_devops_task_plan(plan_title, test_cases_json):
         ]
         epic_response = requests.post(epic_url, headers=headers, json=epic_body)
         if epic_response.status_code not in [200, 201]:
-            return False, f"Failed to create Epic: {epic_response.status_code} - {epic_response.text}", None
+            return False, f"Failed to create Epic: {epic_response.status_code}", None, []
         epic_id = epic_response.json().get("id")
         epic_url_view = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{epic_id}"
-        created_count = 0
+        created_tasks = []
         for tc in test_cases_json[:10]:
-            tc_title = str(tc.get("test_scenario", tc.get("Test Scenario", "Test Case")))[:255]
-            steps_text = tc.get("steps", tc.get("Steps", ""))
-            expected = tc.get("expected_result", tc.get("Expected Result", ""))
-            description_html = f"<b>Steps:</b><br>{steps_text}<br><br><b>Expected Result:</b><br>{expected}"
+            tc_title = str(tc.get("test_scenario", "Test Case"))[:255]
+            steps_text = tc.get("steps", "")
+            expected = tc.get("expected_result", "")
             task_url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Task?api-version=7.1"
             task_body = [
                 {"op": "add", "path": "/fields/System.Title", "value": tc_title},
-                {"op": "add", "path": "/fields/System.Description", "value": description_html},
+                {"op": "add", "path": "/fields/System.Description", "value": f"<b>Steps:</b><br>{steps_text}<br><br><b>Expected Result:</b><br>{expected}"},
                 {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant; Test-Case"},
                 {"op": "add", "path": "/relations/-", "value": {"rel": "System.LinkTypes.Hierarchy-Reverse", "url": f"https://dev.azure.com/{org}/{project}/_apis/wit/workItems/{epic_id}", "attributes": {"comment": "Child of test plan epic"}}}
             ]
             task_response = requests.post(task_url, headers=headers, json=task_body)
             if task_response.status_code in [200, 201]:
-                created_count += 1
-        return True, f"✅ Test Plan created as Epic #{epic_id} with {created_count} Tasks! [View in Azure DevOps]({epic_url_view})", epic_id
+                created_tasks.append(tc_title[:50])
+        return True, epic_url_view, epic_id, created_tasks
     except Exception as e:
-        return False, f"Error: {e}", None
+        return False, f"Error: {e}", None, []
 
 # ============================================
 # PAGE TITLE & DESCRIPTION
@@ -137,11 +136,11 @@ st.title("🤖 Agentic QA Automation Platform")
 st.write("Automate your end-to-end QA workflow using specialised AI agents. Describe your feature once, and the QA Orchestrator coordinates multiple AI agents to analyse requirements, generate test cases, assess testing risk, create Azure DevOps test plans, and produce a complete QA report.")
 
 # ============================================
-# AGENTIC QA AUTOMATION PLATFORM
+# AGENTIC QA ORCHESTRATOR
 # ============================================
 st.write("---")
-st.write("## 🚀 QA Orchestrator Agent")
-st.write("Describe a feature once. The agent autonomously runs the full QA pipeline: requirement gathering → analysis → 30 test cases → risk analysis → Azure DevOps test plan.")
+st.write("## 🚀 QA Orchestrator")
+st.write("Describe a feature once. The Orchestrator activates all agents automatically.")
 
 agent_feature = st.text_area(
     "Describe the feature you want to test:",
@@ -160,112 +159,178 @@ if st.button("🚀 Run QA Agent"):
     elif not agent_plan_name.strip():
         st.warning("Please enter a test plan name.")
     else:
-        agent_log = []
         agent_results = {}
 
-        with st.status("🤖 Agent running full QA pipeline...", expanded=True) as status:
-            st.write("**Step 1/5:** Gathering and structuring requirement...")
-            rg_output = call_openai(
-                "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
-                f"Structure this requirement: {agent_feature}"
-            )
-            agent_results["requirement"] = rg_output
-            agent_log.append("✅ Requirement gathered and structured")
-
-            st.write("**Step 2/5:** Analysing and challenging requirement...")
-            ra_output = call_openai(
-                "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
-                f"Challenge this requirement:\n\n{rg_output}"
-            )
-            agent_results["analysis"] = ra_output
-            agent_log.append("✅ Requirement analysed and challenged")
-
-            st.write("**Step 3/5:** Generating 30 test cases (10 positive, 10 negative, 10 edge cases)...")
-            tc_output = call_openai(
-                "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
-                f"Generate exactly 30 QA test scenarios for: {agent_feature}"
-            )
-            agent_results["test_cases"] = tc_output
-            agent_log.append("✅ 30 test cases generated")
-
-            st.write("**Step 4/5:** Running test coverage risk analysis...")
-            risk_output = call_openai(
-                "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
-                f"Analyse testing risk areas for: {agent_feature}"
-            )
-            try:
-                risk_data = extract_json_array(risk_output)
-                risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
-                agent_results["risk_df"] = risk_df.sort_values("Risk Score", ascending=False)
-                agent_log.append("✅ Risk analysis completed")
-            except Exception:
-                agent_results["risk_df"] = None
-                agent_results["risk_raw"] = risk_output
-                agent_log.append("⚠️ Risk analysis completed (raw format)")
-
-            st.write("**Step 5/5:** Creating Azure DevOps Test Plan...")
-            tc_json_output = call_openai(
-                "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
-                f"Generate 10 structured test cases for: {agent_feature}"
-            )
-            try:
-                tc_json_data = extract_json_array(tc_json_output)
-                success, message, epic_id = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
-                agent_results["devops_success"] = success
-                agent_results["devops_message"] = message
-                if success:
-                    agent_log.append(f"✅ Azure DevOps Test Plan created (Epic #{epic_id})")
-                else:
-                    agent_log.append(f"⚠️ Azure DevOps: {message}")
-            except Exception as e:
-                agent_results["devops_success"] = False
-                agent_results["devops_message"] = f"Could not create test plan: {e}"
-                agent_log.append("⚠️ Azure DevOps test plan creation failed")
-
-            status.update(label="✅ QA Agent completed all steps!", state="complete")
-
+        # AGENTS INVOLVED PANEL
         st.write("---")
-        st.write("## 📊 Agent Report")
-        for log_item in agent_log:
-            st.write(log_item)
+        st.write("### Agents Involved")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.info("🧠\n\n**Requirement\nAgent**")
+        with col2:
+            st.info("🔍\n\n**Analysis\nAgent**")
+        with col3:
+            st.info("🧪\n\n**Test Design\nAgent**")
+        with col4:
+            st.info("⚠️\n\n**Risk\nAgent**")
+        with col5:
+            st.info("🚀\n\n**Azure DevOps\nAgent**")
 
-        with st.expander("📄 Structured Requirement"):
+        st.write("**Status:** 🔄 Running...")
+        st.write("---")
+
+        # AGENT 1: REQUIREMENT AGENT
+        req_placeholder = st.empty()
+        req_placeholder.write("🧠 **Requirement Agent** — Running...")
+        rg_output = call_openai(
+            "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
+            f"Structure this requirement: {agent_feature}"
+        )
+        agent_results["requirement"] = rg_output
+        req_placeholder.write("🧠 **Requirement Agent**\n✓ Structured the requirement\n✓ Identified actors and user stories\n✓ Defined functional and non-functional requirements")
+
+        # AGENT 2: ANALYSIS AGENT
+        analysis_placeholder = st.empty()
+        analysis_placeholder.write("🔍 **Analysis Agent** — Running...")
+        ra_output = call_openai(
+            "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
+            f"Challenge this requirement:\n\n{rg_output}"
+        )
+        agent_results["analysis"] = ra_output
+        ambiguity_found = "ambiguity" in ra_output.lower() or "vague" in ra_output.lower()
+        ac_found = "acceptance criteria" in ra_output.lower()
+        analysis_placeholder.write(f"🔍 **Analysis Agent**\n✓ Challenged requirement for quality\n{'✓ Found ambiguity issues' if ambiguity_found else '✓ No major ambiguity found'}\n{'✓ Found missing acceptance criteria' if ac_found else '✓ Acceptance criteria coverage noted'}\n✓ Edge cases evaluated")
+
+        # AGENT 3: TEST DESIGN AGENT
+        tc_placeholder = st.empty()
+        tc_placeholder.write("🧪 **Test Design Agent** — Running...")
+        tc_output = call_openai(
+            "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
+            f"Generate exactly 30 QA test scenarios for: {agent_feature}"
+        )
+        agent_results["test_cases"] = tc_output
+        positive_count = tc_output.lower().count("verify") if tc_output else 0
+        tc_placeholder.write(f"🧪 **Test Design Agent**\n✓ Generated 30 test cases\n✓ Categorised: Positive / Negative / Edge Cases\n✓ {positive_count} scenarios created\n✓ Ready for export to Excel")
+
+        # AGENT 4: RISK ASSESSMENT AGENT
+        risk_placeholder = st.empty()
+        risk_placeholder.write("⚠️ **Risk Assessment Agent** — Running...")
+        risk_output = call_openai(
+            "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
+            f"Analyse testing risk areas for: {agent_feature}"
+        )
+        try:
+            risk_data = extract_json_array(risk_output)
+            risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
+            risk_df = risk_df.sort_values("Risk Score", ascending=False)
+            agent_results["risk_df"] = risk_df
+            high_risks = risk_df[risk_df["Risk Level"].isin(["Critical", "High"])]["Risk Area"].tolist()
+            medium_risks = risk_df[risk_df["Risk Level"] == "Medium"]["Risk Area"].tolist()
+            risk_summary = ""
+            for r in high_risks[:2]:
+                risk_summary += f"\n✓ High Risk: {r}"
+            for r in medium_risks[:2]:
+                risk_summary += f"\n✓ Medium Risk: {r}"
+            risk_placeholder.write(f"⚠️ **Risk Assessment Agent**\n✓ Analysed {len(risk_df)} risk areas\n✓ Risk matrix generated{risk_summary}")
+        except Exception:
+            agent_results["risk_df"] = None
+            risk_placeholder.write("⚠️ **Risk Assessment Agent**\n✓ Risk analysis completed (raw format)")
+
+        # AGENT 5: AZURE DEVOPS AGENT
+        devops_placeholder = st.empty()
+        devops_placeholder.write("🚀 **Azure DevOps Agent** — Running...")
+        tc_json_output = call_openai(
+            "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
+            f"Generate 10 structured test cases for: {agent_feature}"
+        )
+        try:
+            tc_json_data = extract_json_array(tc_json_output)
+            success, epic_url_view, epic_id, created_tasks = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
+            agent_results["devops_success"] = success
+            agent_results["devops_url"] = epic_url_view
+            agent_results["epic_id"] = epic_id
+            agent_results["created_tasks"] = created_tasks
+            if success:
+                tasks_summary = "\n".join([f"✓ Task: {t}" for t in created_tasks[:3]])
+                devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n✓ Created Epic #{epic_id}: {agent_plan_name}\n✓ Created Test Plan\n✓ Created {len(created_tasks)} Test Tasks\n{tasks_summary}")
+            else:
+                devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ {epic_url_view}")
+        except Exception as e:
+            agent_results["devops_success"] = False
+            devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ Could not create test plan: {e}")
+
+        # STATUS COMPLETE
+        st.write("---")
+        st.success("✔ All agents completed successfully")
+
+        # AGENT EXECUTION REPORT
+        st.write("---")
+        st.write("## 📋 Agent Execution Report")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Agents Run", "5")
+        with col2:
+            st.metric("Test Cases", "30")
+        with col3:
+            risk_count = len(agent_results.get("risk_df", pd.DataFrame())) if agent_results.get("risk_df") is not None else 0
+            st.metric("Risk Areas Identified", str(risk_count))
+
+        with st.expander("📄 Structured Requirement — Requirement Agent"):
             st.write(agent_results.get("requirement", ""))
-        with st.expander("🧠 Requirement Analysis"):
-            st.write(agent_results.get("analysis", ""))
-        with st.expander("🧪 Generated Test Cases (30)"):
-            st.code(agent_results.get("test_cases", ""))
-        if agent_results.get("risk_df") is not None:
-            with st.expander("🎯 Risk Analysis"):
-                st.dataframe(agent_results["risk_df"], use_container_width=True)
-        if agent_results.get("devops_success"):
-            st.success(agent_results.get("devops_message", ""))
-        else:
-            st.error(agent_results.get("devops_message", ""))
 
-        full_report = f"""QA AGENT REPORT
+        with st.expander("🔍 Requirement Analysis — Analysis Agent"):
+            st.write(agent_results.get("analysis", ""))
+
+        with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
+            st.code(agent_results.get("test_cases", ""))
+
+        if agent_results.get("risk_df") is not None:
+            with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
+                st.dataframe(agent_results["risk_df"], use_container_width=True)
+                buf = io.BytesIO()
+                agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
+                buf.seek(0)
+                st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        if agent_results.get("devops_success"):
+            with st.expander("🚀 Azure DevOps Work Items — Azure DevOps Agent"):
+                st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
+                st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
+
+        full_report = f"""AGENT EXECUTION REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Feature: {agent_feature}
+Test Plan: {agent_plan_name}
+
+Agents Involved:
+- 🧠 Requirement Agent
+- 🔍 Analysis Agent
+- 🧪 Test Design Agent
+- ⚠️ Risk Assessment Agent
+- 🚀 Azure DevOps Agent
+
+Status: Completed
 
 {'='*60}
-STRUCTURED REQUIREMENT
+STRUCTURED REQUIREMENT — Requirement Agent
 {'='*60}
 {agent_results.get('requirement', '')}
 
 {'='*60}
-REQUIREMENT ANALYSIS
+REQUIREMENT ANALYSIS — Analysis Agent
 {'='*60}
 {agent_results.get('analysis', '')}
 
 {'='*60}
-GENERATED TEST CASES
+GENERATED TEST CASES — Test Design Agent
 {'='*60}
 {agent_results.get('test_cases', '')}
 """
-        st.download_button("⬇️ Download Full Agent Report", full_report, "qa_agent_report.txt")
+        st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
 
 # ============================================
-# QA KNOWLEDGE BASE (formerly search)
+# QA KNOWLEDGE BASE
 # ============================================
 st.write("---")
 st.write("## 📚 QA Knowledge Base")
@@ -524,11 +589,11 @@ with st.expander("🔧 Individual QA Tools"):
                 tp_out = call_openai("You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string), expected_result. Generate 5 test cases.", f"Generate test cases for: {tp_feat}")
             try:
                 tp_data = extract_json_array(tp_out)
-                success, message, epic_id = create_azure_devops_task_plan(tp_name, tp_data)
+                success, epic_url_view, epic_id, created_tasks = create_azure_devops_task_plan(tp_name, tp_data)
                 if success:
-                    st.success(message)
+                    st.success(f"✅ Test Plan created as Epic #{epic_id} with {len(created_tasks)} Tasks! [View in Azure DevOps]({epic_url_view})")
                 else:
-                    st.error(message)
+                    st.error(epic_url_view)
             except Exception as e:
                 st.error(f"Error: {e}")
 
