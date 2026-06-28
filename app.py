@@ -437,7 +437,7 @@ if query:
 # INDIVIDUAL TOOLS (collapsible)
 # ============================================
 st.write("---")
-with st.expander("🧠 Individual QA Agents"):
+with st.expander("🧠 Individual AI Agents"):
     st.write("Use these tools individually if you prefer manual control over each step.")
 
     st.write("### 📝 Requirement Gathering")
