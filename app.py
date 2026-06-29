@@ -136,169 +136,184 @@ st.title("🤖 Agentic QA Automation Platform")
 st.write("Automate your end-to-end QA workflow using specialised AI agents. Describe your feature once, and the QA Orchestrator coordinates multiple AI agents to analyse requirements, generate test cases, assess testing risk, create Azure DevOps test plans, and produce a complete QA report.")
 
 # ============================================
-# AGENTIC QA ORCHESTRATOR
+# MODE SELECTOR — IMPORTANT
 # ============================================
 st.write("---")
-st.write("## 🚀 QA Orchestrator")
-st.write("Describe a feature once or paste a requirement. The QA Orchestrator coordinates specialised AI agents to analyse requirements, generate test cases, assess risk, review quality, and create Azure DevOps artefacts automatically.")
+st.markdown("## ⚠️ IMPORTANT")
+st.markdown("**Choose how you want to use this platform:**")
 
-agent_feature = st.text_area(
-    "Describe the feature you want to test:",
-    placeholder="e.g. User can book a car service appointment online",
-    key="agent_input"
+mode = st.radio(
+    "",
+    [
+        "🚀 Run Full QA Workflow (Orchestrator)",
+        "🔧 Use Individual Tools (Manual Control)"
+    ],
+    key="mode_selector"
 )
 
-agent_plan_name = st.text_input(
-    "Azure DevOps Test Plan Name:",
-    placeholder="e.g. Car Booking Feature - Sprint 1"
-)
+st.write("---")
 
-if st.button("🚀 🚀 Run QA Workflow"):
-    if not agent_feature.strip():
-        st.warning("Please describe a feature first.")
-    elif not agent_plan_name.strip():
-        st.warning("Please enter a test plan name.")
-    else:
-        agent_results = {}
+# ============================================
+# MODE 1: AGENTIC QA ORCHESTRATOR
+# ============================================
+if mode == "🚀 Run Full QA Workflow (Orchestrator)":
+    st.write("## 🚀 QA Orchestrator")
+    st.write("Describe a feature once. The Orchestrator activates all agents automatically — no manual steps needed.")
 
-        # AGENTS INVOLVED PANEL
-        st.write("---")
-        st.write("### Agents Involved")
-        col1, col2, col3, col4, col5 = st.columns(5)
-        with col1:
-            st.info("🧠\n\n**Requirement\nAgent**")
-        with col2:
-            st.info("🔍\n\n**Analysis\nAgent**")
-        with col3:
-            st.info("🧪\n\n**Test Design\nAgent**")
-        with col4:
-            st.info("⚠️\n\n**Risk\nAgent**")
-        with col5:
-            st.info("🚀\n\n**Azure DevOps\nAgent**")
+    agent_feature = st.text_area(
+        "Describe the feature you want to test:",
+        placeholder="e.g. User can book a car service appointment online",
+        key="agent_input"
+    )
 
-        st.write("**Status:** 🔄 Running...")
-        st.write("---")
+    agent_plan_name = st.text_input(
+        "Azure DevOps Test Plan Name:",
+        placeholder="e.g. Car Booking Feature - Sprint 1"
+    )
 
-        # AGENT 1: REQUIREMENT AGENT
-        req_placeholder = st.empty()
-        req_placeholder.write("🧠 **Requirement Agent** — Running...")
-        rg_output = call_openai(
-            "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
-            f"Structure this requirement: {agent_feature}"
-        )
-        agent_results["requirement"] = rg_output
-        req_placeholder.write("🧠 **Requirement Agent**\n✓ Structured the requirement\n✓ Identified actors and user stories\n✓ Defined functional and non-functional requirements")
+    if st.button("🚀 Run QA Agent"):
+        if not agent_feature.strip():
+            st.warning("Please describe a feature first.")
+        elif not agent_plan_name.strip():
+            st.warning("Please enter a test plan name.")
+        else:
+            agent_results = {}
 
-        # AGENT 2: ANALYSIS AGENT
-        analysis_placeholder = st.empty()
-        analysis_placeholder.write("🔍 **Analysis Agent** — Running...")
-        ra_output = call_openai(
-            "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
-            f"Challenge this requirement:\n\n{rg_output}"
-        )
-        agent_results["analysis"] = ra_output
-        ambiguity_found = "ambiguity" in ra_output.lower() or "vague" in ra_output.lower()
-        ac_found = "acceptance criteria" in ra_output.lower()
-        analysis_placeholder.write(f"🔍 **Analysis Agent**\n✓ Challenged requirement for quality\n{'✓ Found ambiguity issues' if ambiguity_found else '✓ No major ambiguity found'}\n{'✓ Found missing acceptance criteria' if ac_found else '✓ Acceptance criteria coverage noted'}\n✓ Edge cases evaluated")
+            st.write("---")
+            st.write("### Agents Involved")
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.info("🧠\n\n**Requirement\nAgent**")
+            with col2:
+                st.info("🔍\n\n**Analysis\nAgent**")
+            with col3:
+                st.info("🧪\n\n**Test Design\nAgent**")
+            with col4:
+                st.info("⚠️\n\n**Risk\nAgent**")
+            with col5:
+                st.info("🚀\n\n**Azure DevOps\nAgent**")
 
-        # AGENT 3: TEST DESIGN AGENT
-        tc_placeholder = st.empty()
-        tc_placeholder.write("🧪 **Test Design Agent** — Running...")
-        tc_output = call_openai(
-            "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
-            f"Generate exactly 30 QA test scenarios for: {agent_feature}"
-        )
-        agent_results["test_cases"] = tc_output
-        positive_count = tc_output.lower().count("verify") if tc_output else 0
-        tc_placeholder.write(f"🧪 **Test Design Agent**\n✓ Generated 30 test cases\n✓ Categorised: Positive / Negative / Edge Cases\n✓ {positive_count} scenarios created\n✓ Ready for export to Excel")
+            st.write("**Status:** 🔄 Running...")
+            st.write("---")
 
-        # AGENT 4: RISK ASSESSMENT AGENT
-        risk_placeholder = st.empty()
-        risk_placeholder.write("⚠️ **Risk Assessment Agent** — Running...")
-        risk_output = call_openai(
-            "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
-            f"Analyse testing risk areas for: {agent_feature}"
-        )
-        try:
-            risk_data = extract_json_array(risk_output)
-            risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
-            risk_df = risk_df.sort_values("Risk Score", ascending=False)
-            agent_results["risk_df"] = risk_df
-            high_risks = risk_df[risk_df["Risk Level"].isin(["Critical", "High"])]["Risk Area"].tolist()
-            medium_risks = risk_df[risk_df["Risk Level"] == "Medium"]["Risk Area"].tolist()
-            risk_summary = ""
-            for r in high_risks[:2]:
-                risk_summary += f"\n✓ High Risk: {r}"
-            for r in medium_risks[:2]:
-                risk_summary += f"\n✓ Medium Risk: {r}"
-            risk_placeholder.write(f"⚠️ **Risk Assessment Agent**\n✓ Analysed {len(risk_df)} risk areas\n✓ Risk matrix generated{risk_summary}")
-        except Exception:
-            agent_results["risk_df"] = None
-            risk_placeholder.write("⚠️ **Risk Assessment Agent**\n✓ Risk analysis completed (raw format)")
+            # AGENT 1: REQUIREMENT AGENT
+            req_placeholder = st.empty()
+            req_placeholder.write("🧠 **Requirement Agent** — Running...")
+            rg_output = call_openai(
+                "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
+                f"Structure this requirement: {agent_feature}"
+            )
+            agent_results["requirement"] = rg_output
+            req_placeholder.write("🧠 **Requirement Agent**\n\n✓ Structured the requirement\n\n✓ Identified actors and user stories\n\n✓ Defined functional and non-functional requirements")
 
-        # AGENT 5: AZURE DEVOPS AGENT
-        devops_placeholder = st.empty()
-        devops_placeholder.write("🚀 **Azure DevOps Agent** — Running...")
-        tc_json_output = call_openai(
-            "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
-            f"Generate 10 structured test cases for: {agent_feature}"
-        )
-        try:
-            tc_json_data = extract_json_array(tc_json_output)
-            success, epic_url_view, epic_id, created_tasks = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
-            agent_results["devops_success"] = success
-            agent_results["devops_url"] = epic_url_view
-            agent_results["epic_id"] = epic_id
-            agent_results["created_tasks"] = created_tasks
-            if success:
-                tasks_summary = "\n".join([f"✓ Task: {t}" for t in created_tasks[:3]])
-                devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n✓ Created Epic #{epic_id}: {agent_plan_name}\n✓ Created Test Plan\n✓ Created {len(created_tasks)} Test Tasks\n{tasks_summary}")
-            else:
-                devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ {epic_url_view}")
-        except Exception as e:
-            agent_results["devops_success"] = False
-            devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ Could not create test plan: {e}")
+            # AGENT 2: ANALYSIS AGENT
+            analysis_placeholder = st.empty()
+            analysis_placeholder.write("🔍 **Analysis Agent** — Running...")
+            ra_output = call_openai(
+                "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
+                f"Challenge this requirement:\n\n{rg_output}"
+            )
+            agent_results["analysis"] = ra_output
+            ambiguity_found = "ambiguity" in ra_output.lower() or "vague" in ra_output.lower()
+            ac_found = "acceptance criteria" in ra_output.lower()
+            analysis_placeholder.write(f"🔍 **Analysis Agent**\n\n✓ Challenged requirement for quality\n\n{'✓ Found ambiguity issues' if ambiguity_found else '✓ No major ambiguity found'}\n\n{'✓ Found missing acceptance criteria' if ac_found else '✓ Acceptance criteria coverage noted'}\n\n✓ Edge cases evaluated")
 
-        # STATUS COMPLETE
-        st.write("---")
-        st.success("✔ All agents completed successfully")
+            # AGENT 3: TEST DESIGN AGENT
+            tc_placeholder = st.empty()
+            tc_placeholder.write("🧪 **Test Design Agent** — Running...")
+            tc_output = call_openai(
+                "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
+                f"Generate exactly 30 QA test scenarios for: {agent_feature}"
+            )
+            agent_results["test_cases"] = tc_output
+            tc_placeholder.write("🧪 **Test Design Agent**\n\n✓ Generated 30 test cases\n\n✓ Categorised: Positive / Negative / Edge Cases\n\n✓ Ready for export to Excel")
 
-        # AGENT EXECUTION REPORT
-        st.write("---")
-        st.write("## 📋 Agent Execution Report")
+            # AGENT 4: RISK ASSESSMENT AGENT
+            risk_placeholder = st.empty()
+            risk_placeholder.write("⚠️ **Risk Assessment Agent** — Running...")
+            risk_output = call_openai(
+                "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
+                f"Analyse testing risk areas for: {agent_feature}"
+            )
+            try:
+                risk_data = extract_json_array(risk_output)
+                risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
+                risk_df = risk_df.sort_values("Risk Score", ascending=False)
+                agent_results["risk_df"] = risk_df
+                high_risks = risk_df[risk_df["Risk Level"].isin(["Critical", "High"])]["Risk Area"].tolist()
+                medium_risks = risk_df[risk_df["Risk Level"] == "Medium"]["Risk Area"].tolist()
+                risk_summary = ""
+                for r in high_risks[:2]:
+                    risk_summary += f"\n\n✓ High Risk: {r}"
+                for r in medium_risks[:2]:
+                    risk_summary += f"\n\n✓ Medium Risk: {r}"
+                risk_placeholder.write(f"⚠️ **Risk Assessment Agent**\n\n✓ Analysed {len(risk_df)} risk areas\n\n✓ Risk matrix generated{risk_summary}")
+            except Exception:
+                agent_results["risk_df"] = None
+                risk_placeholder.write("⚠️ **Risk Assessment Agent**\n\n✓ Risk analysis completed")
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Agents Run", "5")
-        with col2:
-            st.metric("Test Cases", "30")
-        with col3:
-            risk_count = len(agent_results.get("risk_df", pd.DataFrame())) if agent_results.get("risk_df") is not None else 0
-            st.metric("Risk Areas Identified", str(risk_count))
+            # AGENT 5: AZURE DEVOPS AGENT
+            devops_placeholder = st.empty()
+            devops_placeholder.write("🚀 **Azure DevOps Agent** — Running...")
+            tc_json_output = call_openai(
+                "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
+                f"Generate 10 structured test cases for: {agent_feature}"
+            )
+            try:
+                tc_json_data = extract_json_array(tc_json_output)
+                success, epic_url_view, epic_id, created_tasks = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
+                agent_results["devops_success"] = success
+                agent_results["devops_url"] = epic_url_view
+                agent_results["epic_id"] = epic_id
+                agent_results["created_tasks"] = created_tasks
+                if success:
+                    tasks_summary = "\n\n".join([f"✓ Task: {t}" for t in created_tasks[:3]])
+                    devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n\n✓ Created Epic #{epic_id}: {agent_plan_name}\n\n✓ Created Test Plan\n\n✓ Created {len(created_tasks)} Test Tasks\n\n{tasks_summary}")
+                else:
+                    devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n\n⚠️ {epic_url_view}")
+            except Exception as e:
+                agent_results["devops_success"] = False
+                devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n\n⚠️ Could not create test plan: {e}")
 
-        with st.expander("📄 Structured Requirement — Requirement Agent"):
-            st.write(agent_results.get("requirement", ""))
+            st.write("---")
+            st.success("✔ All agents completed — Status: Completed")
 
-        with st.expander("🔍 Requirement Analysis — Analysis Agent"):
-            st.write(agent_results.get("analysis", ""))
+            # AGENT EXECUTION REPORT
+            st.write("---")
+            st.write("## 📋 Agent Execution Report")
 
-        with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
-            st.code(agent_results.get("test_cases", ""))
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Agents Run", "5")
+            with col2:
+                st.metric("Test Cases", "30")
+            with col3:
+                risk_count = len(agent_results.get("risk_df", pd.DataFrame())) if agent_results.get("risk_df") is not None else 0
+                st.metric("Risk Areas Identified", str(risk_count))
 
-        if agent_results.get("risk_df") is not None:
-            with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
-                st.dataframe(agent_results["risk_df"], use_container_width=True)
-                buf = io.BytesIO()
-                agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
-                buf.seek(0)
-                st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with st.expander("📄 Structured Requirement — Requirement Agent"):
+                st.write(agent_results.get("requirement", ""))
 
-        if agent_results.get("devops_success"):
-            with st.expander("🚀 Azure DevOps Work Items — Azure DevOps Agent"):
-                st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
-                st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
+            with st.expander("🔍 Requirement Analysis — Analysis Agent"):
+                st.write(agent_results.get("analysis", ""))
 
-        full_report = f"""AGENT EXECUTION REPORT
+            with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
+                st.code(agent_results.get("test_cases", ""))
+
+            if agent_results.get("risk_df") is not None:
+                with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
+                    st.dataframe(agent_results["risk_df"], use_container_width=True)
+                    buf = io.BytesIO()
+                    agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
+                    buf.seek(0)
+                    st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+            if agent_results.get("devops_success"):
+                with st.expander("🚀 Azure DevOps Work Items — Azure DevOps Agent"):
+                    st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
+                    st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
+
+            full_report = f"""AGENT EXECUTION REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Feature: {agent_feature}
 Test Plan: {agent_plan_name}
@@ -327,119 +342,115 @@ GENERATED TEST CASES — Test Design Agent
 {'='*60}
 {agent_results.get('test_cases', '')}
 """
-        st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
+            st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
 
 # ============================================
-# QA KNOWLEDGE BASE
+# MODE 2: INDIVIDUAL TOOLS
 # ============================================
-st.write("---")
-st.write("## 📚 QA Knowledge Base")
-st.write("Search predefined QA scenarios and testing guidance by keyword.")
+else:
+    st.write("## 🔧 Individual QA Tools")
+    st.write("Use each tool independently with full manual control over every step.")
 
-query = st.text_input("Search by keyword:", key="search_box")
-st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
-
-if st.button("Clear Search", key="clear_btn"):
-    if "search_box" in st.session_state:
-        del st.session_state["search_box"]
-    st.rerun()
-
-if query:
-    query = query.lower().replace("-", " ")
-    results = []
-    download_text = ""
-    filter_type = None
-    if "positive" in query:
-        filter_type = "positive"
-    elif "negative" in query:
-        filter_type = "negative"
-    elif "edge" in query:
-        filter_type = "edge"
-    matched_module = None
-    if "ui non functional" in query:
-        matched_module = "ui non-functional"
-    elif query.strip() in ["ui", "frontend"] or "ui " in query:
-        matched_module = "ui"
-    elif "regression" in query:
-        matched_module = "regression"
-    elif "accessibility" in query:
-        matched_module = "accessibility"
-    elif "cross site scripting" in query or "xss" in query:
-        matched_module = "cross site scripting"
-    elif "data security" in query:
-        matched_module = "data security"
-    elif "api security" in query:
-        matched_module = "api security"
-    elif "checkout" in query or "payment" in query:
-        matched_module = "checkout"
-    elif "upload" in query:
-        matched_module = "upload"
-    elif "download" in query:
-        matched_module = "download"
-    elif "search" in query:
-        matched_module = "search"
-    elif "login" in query:
-        matched_module = "login"
-    elif "logout" in query:
-        matched_module = "logout"
-    elif "registration" in query:
-        matched_module = "registration"
-    elif "password" in query:
-        matched_module = "password reset"
-    elif "vehicle" in query:
-        matched_module = "vehicle"
-    elif "order" in query:
-        matched_module = "order"
-    elif "api" in query:
-        matched_module = "api"
-    elif "database" in query:
-        matched_module = "database"
-    elif "performance" in query:
-        matched_module = "performance"
-    elif "session" in query:
-        matched_module = "session"
-    elif "authentication" in query or "authorization" in query:
-        matched_module = "authentication"
-    elif "security" in query:
-        matched_module = "security"
-    module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
-    keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
-    for section in sections:
-        section_text = section.lower().replace("-", " ")
-        title = section.strip().split("\n")[0].lower().replace("-", " ")
-        if "all" in query:
-            results.append(section)
-            continue
-        if matched_module:
-            keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
-            if any(word in title for word in keywords):
-                if matched_module == "accessibility" and "accessibility" not in title:
-                    continue
-                if matched_module == "regression" and "regression" not in title:
-                    continue
-                if filter_type:
-                    if filter_type in title or filter_type in section_text:
+    # QA KNOWLEDGE BASE
+    st.write("---")
+    st.write("### 📚 QA Knowledge Base")
+    st.write("Search predefined QA scenarios and testing guidance by keyword.")
+    query = st.text_input("Search by keyword:", key="search_box")
+    st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
+    if st.button("Clear Search", key="clear_btn"):
+        if "search_box" in st.session_state:
+            del st.session_state["search_box"]
+        st.rerun()
+    if query:
+        query = query.lower().replace("-", " ")
+        results = []
+        download_text = ""
+        filter_type = None
+        if "positive" in query:
+            filter_type = "positive"
+        elif "negative" in query:
+            filter_type = "negative"
+        elif "edge" in query:
+            filter_type = "edge"
+        matched_module = None
+        if "ui non functional" in query:
+            matched_module = "ui non-functional"
+        elif query.strip() in ["ui", "frontend"] or "ui " in query:
+            matched_module = "ui"
+        elif "regression" in query:
+            matched_module = "regression"
+        elif "accessibility" in query:
+            matched_module = "accessibility"
+        elif "cross site scripting" in query or "xss" in query:
+            matched_module = "cross site scripting"
+        elif "data security" in query:
+            matched_module = "data security"
+        elif "api security" in query:
+            matched_module = "api security"
+        elif "checkout" in query or "payment" in query:
+            matched_module = "checkout"
+        elif "upload" in query:
+            matched_module = "upload"
+        elif "download" in query:
+            matched_module = "download"
+        elif "search" in query:
+            matched_module = "search"
+        elif "login" in query:
+            matched_module = "login"
+        elif "logout" in query:
+            matched_module = "logout"
+        elif "registration" in query:
+            matched_module = "registration"
+        elif "password" in query:
+            matched_module = "password reset"
+        elif "vehicle" in query:
+            matched_module = "vehicle"
+        elif "order" in query:
+            matched_module = "order"
+        elif "api" in query:
+            matched_module = "api"
+        elif "database" in query:
+            matched_module = "database"
+        elif "performance" in query:
+            matched_module = "performance"
+        elif "session" in query:
+            matched_module = "session"
+        elif "authentication" in query or "authorization" in query:
+            matched_module = "authentication"
+        elif "security" in query:
+            matched_module = "security"
+        module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
+        keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
+        for section in sections:
+            section_text = section.lower().replace("-", " ")
+            title = section.strip().split("\n")[0].lower().replace("-", " ")
+            if "all" in query:
+                results.append(section)
+                continue
+            if matched_module:
+                keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
+                if any(word in title for word in keywords):
+                    if matched_module == "accessibility" and "accessibility" not in title:
+                        continue
+                    if matched_module == "regression" and "regression" not in title:
+                        continue
+                    if filter_type:
+                        if filter_type in title or filter_type in section_text:
+                            results.append(section)
+                    else:
                         results.append(section)
-                else:
-                    results.append(section)
-    results = list(dict.fromkeys(results))
-    st.write(f"✅ {len(results)} results found")
-    if results:
-        for sec in results:
-            st.code(sec)
-            st.write("---")
-            download_text += sec + "\n\n"
-        st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
-    else:
-        st.warning("No results found.")
+        results = list(dict.fromkeys(results))
+        st.write(f"✅ {len(results)} results found")
+        if results:
+            for sec in results:
+                st.code(sec)
+                st.write("---")
+                download_text += sec + "\n\n"
+            st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
+        else:
+            st.warning("No results found.")
 
-# ============================================
-# INDIVIDUAL TOOLS (collapsible)
-# ============================================
-st.write("---")
-with st.expander("🧠 Individual AI Agents"):
-    st.write("Use these tools individually if you prefer manual control over each step.")
-
+    st.write("---")
     st.write("### 📝 Requirement Gathering")
     rough_idea = st.text_area("Describe your rough idea:", placeholder="e.g. We need users to reset their password", key="rg_input")
     if st.button("Generate Structured Requirement"):
