@@ -140,7 +140,7 @@ st.write("Automate your end-to-end QA workflow using specialised AI agents. Desc
 # ============================================
 st.write("---")
 st.write("## 🚀 QA Orchestrator")
-st.write("Describe a feature once. The Orchestrator activates all agents automatically.")
+st.write("🧠 Individual AI Agents. The QA Orchestrator coordinates specialised AI agents to analyse requirements, generate test cases, assess risk, review quality, and create Azure DevOps artefacts automatically.")
 
 agent_feature = st.text_area(
     "Describe the feature you want to test:",
@@ -153,7 +153,7 @@ agent_plan_name = st.text_input(
     placeholder="e.g. Car Booking Feature - Sprint 1"
 )
 
-if st.button("🚀 Run QA Agent"):
+if st.button("🚀 Run QA Workflow"):
     if not agent_feature.strip():
         st.warning("Please describe a feature first.")
     elif not agent_plan_name.strip():
