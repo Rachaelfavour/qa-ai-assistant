@@ -65,26 +65,29 @@ def flatten_value(v):
         return ", ".join(str(item) for item in v)
     return v
 
-def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
+# FIXED: Now creates a proper Bug work item with correct fields
+def create_azure_devops_bug(title, severity, description, steps_to_reproduce):
     try:
         pat = st.secrets.get("AZURE_DEVOPS_PAT")
         org = "richkome"
         project = "QA-Assistant"
         if not pat:
             return False, "Azure DevOps PAT not found in Streamlit secrets."
-        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Issue?api-version=7.1"
+        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Bug?api-version=7.1"
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {"Content-Type": "application/json-patch+json", "Authorization": f"Basic {credentials}"}
         body = [
             {"op": "add", "path": "/fields/System.Title", "value": title},
-            {"op": "add", "path": "/fields/System.Description", "value": f"<b>Severity:</b> {severity}<br><br><b>Description:</b><br>{description}<br><br><b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
+            {"op": "add", "path": "/fields/Microsoft.VSTS.Common.Severity", "value": severity},
+            {"op": "add", "path": "/fields/System.Description", "value": f"<b>Description:</b><br>{description}"},
+            {"op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": f"<b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
             {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant; Bug-Report"}
         ]
         response = requests.post(url, headers=headers, json=body)
         if response.status_code in [200, 201]:
             work_item_id = response.json().get("id")
             work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
-            return True, f"✅ Issue #{work_item_id} created! [View in Azure DevOps]({work_item_url})"
+            return True, f"✅ Bug #{work_item_id} logged to Azure DevOps! [View Bug]({work_item_url})"
         else:
             return False, f"Failed: {response.status_code} - {response.text}"
     except Exception as e:
@@ -284,7 +287,7 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                 agent_results["risk_df"] = None
                 risk_placeholder.write("⚠️ **Risk Assessment Agent**\n✓ Risk analysis completed (raw format)")
 
-            # AGENT 5: QA REVIEW AGENT — NEW VALIDATION STEP
+            # AGENT 5: QA REVIEW AGENT
             review_placeholder = st.empty()
             review_placeholder.write("✅ **QA Review Agent** — Running...")
             review_output = call_openai(
@@ -709,25 +712,28 @@ else:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
+    # ============================================
+    # BUG REPORT — FIXED: always available, creates proper Bug work item
+    # ============================================
     st.write("---")
     st.write("### 🐛 Bug Report")
+    st.write("Log a bug found during manual testing. Creates a proper Bug work item in Azure DevOps.")
+
     bug_title = st.text_input("Bug Title:", placeholder="e.g. Login button unresponsive on mobile", key="bug_title")
     bug_severity = st.selectbox("Severity:", ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"])
-    bug_desc = st.text_area("Bug Description:", placeholder="Describe what happened...", key="bug_desc")
-    bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Click Login\n3. Nothing happens", key="bug_steps")
+    bug_desc = st.text_area("Bug Description:", placeholder="Describe what happened and what was expected...", key="bug_desc")
+    bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Enter valid credentials\n3. Click Login button\n4. Observe — button is unresponsive", key="bug_steps")
+
     if st.button("🐛 Log Bug to Azure DevOps"):
         if not bug_title.strip() or not bug_desc.strip() or not bug_steps.strip():
             st.warning("Please fill in all fields.")
         else:
-            if azure_mode == "🎭 Demo Mode (no Azure calls)":
-                st.info(f"Demo Mode: Simulated — Bug '{bug_title}' would be logged to Azure DevOps in Live Mode.")
+            with st.spinner("Logging bug to Azure DevOps..."):
+                success, message = create_azure_devops_bug(bug_title, bug_severity, bug_desc, bug_steps)
+            if success:
+                st.success(message)
             else:
-                with st.spinner("Logging bug..."):
-                    success, message = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps)
-                if success:
-                    st.success(message)
-                else:
-                    st.error(message)
+                st.error(message)
 
 # ============================================
 # FEEDBACK SUMMARY
