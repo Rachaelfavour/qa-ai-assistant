@@ -65,29 +65,26 @@ def flatten_value(v):
         return ", ".join(str(item) for item in v)
     return v
 
-# FIXED: Now creates a proper Bug work item with correct fields
-def create_azure_devops_bug(title, severity, description, steps_to_reproduce):
+def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
     try:
         pat = st.secrets.get("AZURE_DEVOPS_PAT")
         org = "richkome"
         project = "QA-Assistant"
         if not pat:
             return False, "Azure DevOps PAT not found in Streamlit secrets."
-        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Bug?api-version=7.1"
+        url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Issue?api-version=7.1"
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {"Content-Type": "application/json-patch+json", "Authorization": f"Basic {credentials}"}
         body = [
             {"op": "add", "path": "/fields/System.Title", "value": title},
-            {"op": "add", "path": "/fields/Microsoft.VSTS.Common.Severity", "value": severity},
-            {"op": "add", "path": "/fields/System.Description", "value": f"<b>Description:</b><br>{description}"},
-            {"op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": f"<b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
+            {"op": "add", "path": "/fields/System.Description", "value": f"<b>Severity:</b> {severity}<br><br><b>Description:</b><br>{description}<br><br><b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
             {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant; Bug-Report"}
         ]
         response = requests.post(url, headers=headers, json=body)
         if response.status_code in [200, 201]:
             work_item_id = response.json().get("id")
             work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
-            return True, f"✅ Bug #{work_item_id} logged to Azure DevOps! [View Bug]({work_item_url})"
+            return True, f"✅ Bug logged as Issue #{work_item_id} in Azure DevOps! [View Issue]({work_item_url})"
         else:
             return False, f"Failed: {response.status_code} - {response.text}"
     except Exception as e:
@@ -176,30 +173,22 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
     st.write("## 🚀 QA Orchestrator")
     st.write("The QA Orchestrator coordinates six specialised AI agents in sequence, each with a distinct responsibility, to take a feature from rough idea to published, quality-checked QA artefacts.")
 
-    # PIPELINE FLOWCHART
     st.markdown("""
 <div style="text-align:center; font-family: monospace; line-height: 1.8;">
 <b>🤖 QA Orchestrator</b><br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>🧠 Requirement Agent</b> — Creates the requirement<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>🔍 Analysis Agent</b> — Critiques the requirement<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>🧪 Test Design Agent</b> — Designs the tests<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>⚠️ Risk Assessment Agent</b> — Prioritises testing effort<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>✅ QA Review Agent</b> — Validates quality & completeness<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>🚀 Azure DevOps Agent</b> — Publishes approved artefacts<br>
-│<br>
-▼<br>
+│<br>▼<br>
 <b>📋 Agent Execution Report</b>
 </div>
 """, unsafe_allow_html=True)
@@ -208,16 +197,8 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
     st.write("**Status:** ⏳ Waiting for input...")
     st.write("---")
 
-    agent_feature = st.text_area(
-        "Describe the feature you want to test:",
-        placeholder="e.g. User can book a car service appointment online",
-        key="agent_input"
-    )
-
-    agent_plan_name = st.text_input(
-        "Azure DevOps Test Plan Name:",
-        placeholder="e.g. Car Booking Feature - Sprint 1"
-    )
+    agent_feature = st.text_area("Describe the feature you want to test:", placeholder="e.g. User can book a car service appointment online", key="agent_input")
+    agent_plan_name = st.text_input("Azure DevOps Test Plan Name:", placeholder="e.g. Car Booking Feature - Sprint 1")
 
     if st.button("🚀 Run QA Workflow"):
         if not agent_feature.strip():
@@ -226,50 +207,33 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
             st.warning("Please enter a test plan name.")
         else:
             agent_results = {}
-
             st.write("**Status:** 🔄 Running...")
             st.write("---")
 
-            # AGENT 1: REQUIREMENT AGENT
             req_placeholder = st.empty()
             req_placeholder.write("🧠 **Requirement Agent** — Running...")
-            rg_output = call_openai(
-                "You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.",
-                f"Structure this requirement: {agent_feature}"
-            )
+            rg_output = call_openai("You are a senior business analyst. Given a rough idea, produce a structured requirement with: Requirement Title, Business Objective, Actors, User Stories (3+), Functional Requirements, Non-Functional Requirements, Constraints, Out of Scope. Use bold headers.", f"Structure this requirement: {agent_feature}")
             agent_results["requirement"] = rg_output
             req_placeholder.write("🧠 **Requirement Agent**\n✓ Structured the requirement\n✓ Identified actors and user stories\n✓ Defined functional and non-functional requirements")
 
-            # AGENT 2: ANALYSIS AGENT
             analysis_placeholder = st.empty()
             analysis_placeholder.write("🔍 **Analysis Agent** — Running...")
-            ra_output = call_openai(
-                "You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.",
-                f"Challenge this requirement:\n\n{rg_output}"
-            )
+            ra_output = call_openai("You are a senior QA engineer. Critique this requirement constructively covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.", f"Challenge this requirement:\n\n{rg_output}")
             agent_results["analysis"] = ra_output
             ambiguity_found = "ambiguity" in ra_output.lower() or "vague" in ra_output.lower()
             ac_found = "acceptance criteria" in ra_output.lower()
             analysis_placeholder.write(f"🔍 **Analysis Agent**\n✓ Challenged requirement for quality\n{'✓ Found ambiguity issues' if ambiguity_found else '✓ No major ambiguity found'}\n{'✓ Found missing acceptance criteria' if ac_found else '✓ Acceptance criteria coverage noted'}\n✓ Edge cases evaluated")
 
-            # AGENT 3: TEST DESIGN AGENT
             tc_placeholder = st.empty()
             tc_placeholder.write("🧪 **Test Design Agent** — Running...")
-            tc_output = call_openai(
-                "You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.",
-                f"Generate exactly 30 QA test scenarios for: {agent_feature}"
-            )
+            tc_output = call_openai("You are a senior QA engineer. Generate EXACTLY 10 Positive, 10 Negative, and 10 Edge Case scenarios (30 total). Format: MODULE NAME - POSITIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - NEGATIVE SCENARIOS then 10 dash-bullet lines, blank line, MODULE NAME - EDGE CASES then 10 dash-bullet lines. Each bullet starts with Verify. No duplicates, no filler.", f"Generate exactly 30 QA test scenarios for: {agent_feature}")
             agent_results["test_cases"] = tc_output
             positive_count = tc_output.lower().count("verify") if tc_output else 0
             tc_placeholder.write(f"🧪 **Test Design Agent**\n✓ Generated 30 test cases\n✓ Categorised: Positive / Negative / Edge Cases\n✓ {positive_count} scenarios created\n✓ Ready for export to Excel")
 
-            # AGENT 4: RISK ASSESSMENT AGENT
             risk_placeholder = st.empty()
             risk_placeholder.write("⚠️ **Risk Assessment Agent** — Running...")
-            risk_output = call_openai(
-                "You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).",
-                f"Analyse testing risk areas for: {agent_feature}"
-            )
+            risk_output = call_openai("You are a senior QA risk analyst. Given a feature, identify 5-8 key risk areas. Return ONLY valid JSON array, no markdown. Each item: feature, risk_level (Critical/High/Medium/Low), risk_score (1-10), risk_factors, recommended_focus, test_effort (Low/Medium/High).", f"Analyse testing risk areas for: {agent_feature}")
             try:
                 risk_data = extract_json_array(risk_output)
                 risk_df = pd.DataFrame(risk_data).rename(columns={"feature": "Risk Area", "risk_level": "Risk Level", "risk_score": "Risk Score", "risk_factors": "Key Risk Factors", "recommended_focus": "Recommended Focus", "test_effort": "Test Effort"})
@@ -287,13 +251,9 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                 agent_results["risk_df"] = None
                 risk_placeholder.write("⚠️ **Risk Assessment Agent**\n✓ Risk analysis completed (raw format)")
 
-            # AGENT 5: QA REVIEW AGENT
             review_placeholder = st.empty()
             review_placeholder.write("✅ **QA Review Agent** — Running...")
-            review_output = call_openai(
-                "You are a senior QA lead performing a final quality gate review before publication. You will be given a requirement, a requirement analysis, generated test cases, and a risk assessment. Review the OVERALL PACKAGE for completeness and quality. Return ONLY valid JSON with these fields: approved (true or false), quality_score (1-10), completeness_notes (string, 1-2 sentences), gaps_found (array of strings, any gaps identified), recommendation (string, 1 sentence on whether to publish or revise).",
-                f"REQUIREMENT:\n{rg_output}\n\nANALYSIS:\n{ra_output}\n\nTEST CASES SUMMARY:\n{tc_output[:1500]}\n\nReview this QA package for quality and completeness before it is published to Azure DevOps."
-            )
+            review_output = call_openai("You are a senior QA lead performing a final quality gate review before publication. You will be given a requirement, a requirement analysis, generated test cases, and a risk assessment. Review the OVERALL PACKAGE for completeness and quality. Return ONLY valid JSON with these fields: approved (true or false), quality_score (1-10), completeness_notes (string, 1-2 sentences), gaps_found (array of strings, any gaps identified), recommendation (string, 1 sentence on whether to publish or revise).", f"REQUIREMENT:\n{rg_output}\n\nANALYSIS:\n{ra_output}\n\nTEST CASES SUMMARY:\n{tc_output[:1500]}\n\nReview this QA package for quality and completeness before it is published to Azure DevOps.")
             try:
                 cleaned_review = review_output.strip()
                 if cleaned_review.startswith("```"):
@@ -309,27 +269,16 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                 agent_results["review"] = None
                 review_placeholder.write("✅ **QA Review Agent**\n✓ Quality review completed (raw format)")
 
-            # AGENT 6: AZURE DEVOPS AGENT
             devops_placeholder = st.empty()
             devops_placeholder.write("🚀 **Azure DevOps Agent** — Running...")
-
             if azure_mode == "🎭 Demo Mode (no Azure calls)":
                 agent_results["devops_success"] = True
                 agent_results["devops_url"] = "https://dev.azure.com/richkome/QA-Assistant"
                 agent_results["epic_id"] = "DEMO-001"
-                agent_results["created_tasks"] = [
-                    "Test Case 1: Verify happy path",
-                    "Test Case 2: Verify error handling",
-                    "Test Case 3: Verify edge case",
-                    "Test Case 4: Verify negative scenario",
-                    "Test Case 5: Verify performance"
-                ]
+                agent_results["created_tasks"] = ["Test Case 1: Verify happy path", "Test Case 2: Verify error handling", "Test Case 3: Verify edge case", "Test Case 4: Verify negative scenario", "Test Case 5: Verify performance"]
                 devops_placeholder.write("🚀 **Azure DevOps Agent** *(Demo Mode)*\n✓ Simulated Epic creation: DEMO-001\n✓ Simulated Test Plan created\n✓ Simulated 5 Test Tasks created\n✓ Would link to Azure DevOps in Live Mode")
             else:
-                tc_json_output = call_openai(
-                    "You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.",
-                    f"Generate 10 structured test cases for: {agent_feature}"
-                )
+                tc_json_output = call_openai("You are a senior QA engineer. Return ONLY valid JSON array, no markdown. Each item: test_scenario (short title), steps (numbered steps as single string with newlines), expected_result. Generate exactly 10 test cases.", f"Generate 10 structured test cases for: {agent_feature}")
                 try:
                     tc_json_data = extract_json_array(tc_json_output)
                     success, epic_url_view, epic_id, created_tasks = create_azure_devops_task_plan(agent_plan_name, tc_json_data)
@@ -348,8 +297,6 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
 
             st.write("---")
             st.success("✔ All agents completed — Status: Completed")
-
-            # AGENT EXECUTION REPORT
             st.write("---")
             st.write("## 📋 Agent Execution Report")
 
@@ -367,13 +314,10 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
 
             with st.expander("📄 Structured Requirement — Requirement Agent"):
                 st.write(agent_results.get("requirement", ""))
-
             with st.expander("🔍 Requirement Analysis — Analysis Agent"):
                 st.write(agent_results.get("analysis", ""))
-
             with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
                 st.code(agent_results.get("test_cases", ""))
-
             if agent_results.get("risk_df") is not None:
                 with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
                     st.dataframe(agent_results["risk_df"], use_container_width=True)
@@ -381,7 +325,6 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                     agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
                     buf.seek(0)
                     st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
             if agent_results.get("review"):
                 with st.expander("✅ Quality Review — QA Review Agent"):
                     rv = agent_results["review"]
@@ -393,11 +336,9 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                         for g in rv.get("gaps_found", []):
                             st.write(f"- {g}")
                     st.write(f"**Recommendation:** {rv.get('recommendation', '')}")
-
             with st.expander("🚀 Azure DevOps — Azure DevOps Agent"):
                 if azure_mode == "🎭 Demo Mode (no Azure calls)":
                     st.info("Demo Mode: No real Azure DevOps work items were created. Switch to Live Mode to create real items.")
-                    st.write("Simulated output:")
                     st.write(f"- Epic ID: {agent_results.get('epic_id')}")
                     st.write(f"- Tasks: {len(agent_results.get('created_tasks', []))}")
                 elif agent_results.get("devops_success"):
@@ -713,11 +654,11 @@ else:
                     st.error(f"Error: {e}")
 
     # ============================================
-    # BUG REPORT — FIXED: always available, creates proper Bug work item
+    # BUG REPORT — always available, no Demo Mode block
     # ============================================
     st.write("---")
     st.write("### 🐛 Bug Report")
-    st.write("Log a bug found during manual testing. Creates a proper Bug work item in Azure DevOps.")
+    st.write("Log a bug found during manual testing directly to Azure DevOps.")
 
     bug_title = st.text_input("Bug Title:", placeholder="e.g. Login button unresponsive on mobile", key="bug_title")
     bug_severity = st.selectbox("Severity:", ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"])
@@ -729,7 +670,7 @@ else:
             st.warning("Please fill in all fields.")
         else:
             with st.spinner("Logging bug to Azure DevOps..."):
-                success, message = create_azure_devops_bug(bug_title, bug_severity, bug_desc, bug_steps)
+                success, message = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps)
             if success:
                 st.success(message)
             else:
