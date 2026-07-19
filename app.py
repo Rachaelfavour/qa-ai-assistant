@@ -104,7 +104,7 @@ def create_azure_devops_issue(title, severity, description, steps_to_reproduce, 
         org = "richkome"
         project = "QA-Assistant"
         if not pat:
-            return False, "Azure DevOps PAT not found in Streamlit secrets."
+            return False, "Azure DevOps PAT not found in Streamlit secrets.", None
         url = f"https://dev.azure.com/{org}/{project}/_apis/wit/workitems/$Issue?api-version=7.1"
         credentials = base64.b64encode(f":{pat}".encode()).decode()
         headers = {"Content-Type": "application/json-patch+json", "Authorization": f"Basic {credentials}"}
@@ -428,107 +428,6 @@ else:
     st.write("Use each tool independently with full manual control over every step.")
 
     st.write("---")
-    st.write("## 📚 QA Knowledge Base")
-    st.write("Search predefined QA scenarios and testing guidance by keyword.")
-
-    query = st.text_input("Search by keyword:", key="search_box")
-    st.caption("Try: login, logout, ui frontend, ui non functional, xss, accessibility, regression")
-
-    if st.button("Clear Search", key="clear_btn"):
-        if "search_box" in st.session_state:
-            del st.session_state["search_box"]
-        st.rerun()
-
-    if query:
-        query = query.lower().replace("-", " ")
-        results = []
-        download_text = ""
-        filter_type = None
-        if "positive" in query:
-            filter_type = "positive"
-        elif "negative" in query:
-            filter_type = "negative"
-        elif "edge" in query:
-            filter_type = "edge"
-        matched_module = None
-        if "ui non functional" in query:
-            matched_module = "ui non-functional"
-        elif query.strip() in ["ui", "frontend"] or "ui " in query:
-            matched_module = "ui"
-        elif "regression" in query:
-            matched_module = "regression"
-        elif "accessibility" in query:
-            matched_module = "accessibility"
-        elif "cross site scripting" in query or "xss" in query:
-            matched_module = "cross site scripting"
-        elif "data security" in query:
-            matched_module = "data security"
-        elif "api security" in query:
-            matched_module = "api security"
-        elif "checkout" in query or "payment" in query:
-            matched_module = "checkout"
-        elif "upload" in query:
-            matched_module = "upload"
-        elif "download" in query:
-            matched_module = "download"
-        elif "search" in query:
-            matched_module = "search"
-        elif "login" in query:
-            matched_module = "login"
-        elif "logout" in query:
-            matched_module = "logout"
-        elif "registration" in query:
-            matched_module = "registration"
-        elif "password" in query:
-            matched_module = "password reset"
-        elif "vehicle" in query:
-            matched_module = "vehicle"
-        elif "order" in query:
-            matched_module = "order"
-        elif "api" in query:
-            matched_module = "api"
-        elif "database" in query:
-            matched_module = "database"
-        elif "performance" in query:
-            matched_module = "performance"
-        elif "session" in query:
-            matched_module = "session"
-        elif "authentication" in query or "authorization" in query:
-            matched_module = "authentication"
-        elif "security" in query:
-            matched_module = "security"
-        module_map = {"ui": ["ui", "frontend"], "ui non-functional": ["ui non functional"], "regression": ["regression"], "accessibility": ["accessibility"], "cross site scripting": ["cross site scripting", "xss"], "login": ["login"], "logout": ["logout"], "password reset": ["password"], "registration": ["registration"], "search": ["search"], "upload": ["upload"], "download": ["download"], "vehicle": ["vehicle"], "order": ["order"], "checkout": ["checkout", "payment"], "api": ["api"], "performance": ["performance"], "database": ["database"], "security": ["security"], "data security": ["data security"], "api security": ["api security"], "session": ["session"], "authentication": ["authentication", "authorization"]}
-        keyword_map = {"login": ["login", "sign in", "log in"], "logout": ["logout", "sign out"], "ui": ["frontend", "interface"], "cross site scripting": ["xss"], "checkout": ["payment", "transaction"], "accessibility": ["a11y"]}
-        for section in sections:
-            section_text = section.lower().replace("-", " ")
-            title = section.strip().split("\n")[0].lower().replace("-", " ")
-            if "all" in query:
-                results.append(section)
-                continue
-            if matched_module:
-                keywords = module_map.get(matched_module, []) + keyword_map.get(matched_module, [])
-                if any(word in title for word in keywords):
-                    if matched_module == "accessibility" and "accessibility" not in title:
-                        continue
-                    if matched_module == "regression" and "regression" not in title:
-                        continue
-                    if filter_type:
-                        if filter_type in title or filter_type in section_text:
-                            results.append(section)
-                    else:
-                        results.append(section)
-        results = list(dict.fromkeys(results))
-        st.write(f"✅ {len(results)} results found")
-        if results:
-            for sec in results:
-                st.code(sec)
-                st.write("---")
-                download_text += sec + "\n\n"
-            st.download_button("⬇️ Download Test Scenarios", download_text, "qa_test_scenarios.txt")
-        else:
-            st.warning("No results found.")
-
-    st.write("---")
     st.write("### 📝 Requirement Gathering")
     rough_idea = st.text_area("Describe your rough idea:", placeholder="e.g. We need users to reset their password", key="rg_input")
     if st.button("Generate Structured Requirement"):
@@ -556,7 +455,6 @@ else:
             st.session_state["ra_requirement"] = requirement_text
     if "ra_output" in st.session_state:
         st.write(st.session_state["ra_output"])
-        # FIXED: Download button for requirement analysis
         ra_doc = f"""REQUIREMENT ANALYSIS REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
@@ -715,7 +613,6 @@ ANALYSIS:
     bug_desc = st.text_area("Bug Description:", placeholder="Describe what happened and what was expected...", key="bug_desc")
     bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Enter valid credentials\n3. Click Login button\n4. Observe — button is unresponsive", key="bug_steps")
 
-    # Dynamic team member fetch
     st.write("**Assign to:**")
     with st.spinner("Loading team members from Azure DevOps..."):
         team_members = get_azure_devops_users()
@@ -733,10 +630,11 @@ ANALYSIS:
             st.warning("Please fill in all fields.")
         else:
             with st.spinner("Logging bug to Azure DevOps..."):
-                success, message, work_item_id = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps, assigned_to)
+                success, message, work_item_id = create_azure_devops_issue(
+                    bug_title, bug_severity, bug_desc, bug_steps, assigned_to
+                )
             if success:
                 st.success(message)
-                # Generate downloadable bug report document
                 bug_report_doc = f"""BUG REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Azure DevOps Issue: #{work_item_id}
@@ -744,10 +642,10 @@ Azure DevOps Issue: #{work_item_id}
 {'='*60}
 BUG DETAILS
 {'='*60}
-Title: {bug_title}
-Severity: {bug_severity}
+Title:       {bug_title}
+Severity:    {bug_severity}
 Assigned To: {assigned_to if assigned_to else 'Unassigned'}
-Status: Logged to Azure DevOps
+Status:      Logged to Azure DevOps
 
 DESCRIPTION:
 {bug_desc}
