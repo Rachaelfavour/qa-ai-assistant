@@ -65,7 +65,40 @@ def flatten_value(v):
         return ", ".join(str(item) for item in v)
     return v
 
-def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
+def get_azure_devops_users():
+    try:
+        pat = st.secrets.get("AZURE_DEVOPS_PAT")
+        org = "richkome"
+        project = "QA-Assistant"
+        if not pat:
+            return []
+        credentials = base64.b64encode(f":{pat}".encode()).decode()
+        headers = {"Authorization": f"Basic {credentials}"}
+        team_url = f"https://dev.azure.com/{org}/_apis/projects/{project}/teams?api-version=7.1"
+        team_response = requests.get(team_url, headers=headers)
+        if team_response.status_code != 200:
+            return []
+        teams = team_response.json().get("value", [])
+        if not teams:
+            return []
+        team_id = teams[0].get("id")
+        members_url = f"https://dev.azure.com/{org}/_apis/projects/{project}/teams/{team_id}/members?api-version=7.1"
+        members_response = requests.get(members_url, headers=headers)
+        if members_response.status_code != 200:
+            return []
+        members = members_response.json().get("value", [])
+        users = []
+        for m in members:
+            identity = m.get("identity", {})
+            display_name = identity.get("displayName", "")
+            unique_name = identity.get("uniqueName", "")
+            if display_name and unique_name:
+                users.append({"name": display_name, "email": unique_name})
+        return users
+    except Exception:
+        return []
+
+def create_azure_devops_issue(title, severity, description, steps_to_reproduce, assigned_to=None):
     try:
         pat = st.secrets.get("AZURE_DEVOPS_PAT")
         org = "richkome"
@@ -80,15 +113,18 @@ def create_azure_devops_issue(title, severity, description, steps_to_reproduce):
             {"op": "add", "path": "/fields/System.Description", "value": f"<b>Severity:</b> {severity}<br><br><b>Description:</b><br>{description}<br><br><b>Steps to Reproduce:</b><br>{steps_to_reproduce}"},
             {"op": "add", "path": "/fields/System.Tags", "value": "QA-Assistant; Bug-Report"}
         ]
+        if assigned_to:
+            body.append({"op": "add", "path": "/fields/System.AssignedTo", "value": assigned_to})
         response = requests.post(url, headers=headers, json=body)
         if response.status_code in [200, 201]:
             work_item_id = response.json().get("id")
             work_item_url = f"https://dev.azure.com/{org}/{project}/_workitems/edit/{work_item_id}"
-            return True, f"✅ Bug logged as Issue #{work_item_id} in Azure DevOps! [View Issue]({work_item_url})"
+            assigned_msg = f" — Assigned to {assigned_to}" if assigned_to else " — Unassigned"
+            return True, f"✅ Bug logged as Issue #{work_item_id}{assigned_msg}! [View in Azure DevOps]({work_item_url})", work_item_id
         else:
-            return False, f"Failed: {response.status_code} - {response.text}"
+            return False, f"Failed: {response.status_code} - {response.text}", None
     except Exception as e:
-        return False, f"Error: {e}"
+        return False, f"Error: {e}", None
 
 def create_azure_devops_task_plan(plan_title, test_cases_json):
     try:
@@ -504,7 +540,7 @@ else:
             st.session_state["rg_output"] = rg_output
     if "rg_output" in st.session_state:
         st.write(st.session_state["rg_output"])
-        st.download_button("⬇️ Download Requirement", st.session_state["rg_output"], "requirement.txt")
+        st.download_button("⬇️ Download Requirement Document", st.session_state["rg_output"], "requirement_document.txt")
         feedback_buttons("Requirement Gathering", key_suffix="rg")
 
     st.write("---")
@@ -517,8 +553,22 @@ else:
             with st.spinner("Analysing..."):
                 ra_output = call_openai("You are a senior QA engineer. Critique this requirement covering: 1. Ambiguity, 2. Missing acceptance criteria, 3. Untestable language, 4. Edge cases not covered. Use bold headers.", f"Challenge this requirement:\n\n{requirement_text}")
             st.session_state["ra_output"] = ra_output
+            st.session_state["ra_requirement"] = requirement_text
     if "ra_output" in st.session_state:
         st.write(st.session_state["ra_output"])
+        # FIXED: Download button for requirement analysis
+        ra_doc = f"""REQUIREMENT ANALYSIS REPORT
+Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+ORIGINAL REQUIREMENT:
+{st.session_state.get('ra_requirement', '')}
+
+{'='*60}
+ANALYSIS:
+{'='*60}
+{st.session_state['ra_output']}
+"""
+        st.download_button("⬇️ Download Requirement Analysis", ra_doc, "requirement_analysis.txt")
         feedback_buttons("Requirement Analysis", key_suffix="ra")
 
     st.write("---")
@@ -654,25 +704,65 @@ else:
                     st.error(f"Error: {e}")
 
     # ============================================
-    # BUG REPORT — always available, no Demo Mode block
+    # BUG REPORT — always available, dynamic assignment, download report
     # ============================================
     st.write("---")
     st.write("### 🐛 Bug Report")
-    st.write("Log a bug found during manual testing directly to Azure DevOps.")
+    st.write("Log a bug found during manual testing. Assign it to a team member and download a copy for your records.")
 
     bug_title = st.text_input("Bug Title:", placeholder="e.g. Login button unresponsive on mobile", key="bug_title")
     bug_severity = st.selectbox("Severity:", ["1 - Critical", "2 - High", "3 - Medium", "4 - Low"])
     bug_desc = st.text_area("Bug Description:", placeholder="Describe what happened and what was expected...", key="bug_desc")
     bug_steps = st.text_area("Steps to Reproduce:", placeholder="1. Go to login page\n2. Enter valid credentials\n3. Click Login button\n4. Observe — button is unresponsive", key="bug_steps")
 
+    # Dynamic team member fetch
+    st.write("**Assign to:**")
+    with st.spinner("Loading team members from Azure DevOps..."):
+        team_members = get_azure_devops_users()
+
+    if team_members:
+        member_options = ["— Unassigned —"] + [f"{m['name']} ({m['email']})" for m in team_members]
+        selected_member = st.selectbox("Select team member:", member_options, key="bug_assignee")
+        assigned_to = None if selected_member == "— Unassigned —" else next((m["email"] for m in team_members if f"{m['name']} ({m['email']})" == selected_member), None)
+    else:
+        st.info("Could not load team members. Bug will be created as unassigned.")
+        assigned_to = None
+
     if st.button("🐛 Log Bug to Azure DevOps"):
         if not bug_title.strip() or not bug_desc.strip() or not bug_steps.strip():
             st.warning("Please fill in all fields.")
         else:
             with st.spinner("Logging bug to Azure DevOps..."):
-                success, message = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps)
+                success, message, work_item_id = create_azure_devops_issue(bug_title, bug_severity, bug_desc, bug_steps, assigned_to)
             if success:
                 st.success(message)
+                # Generate downloadable bug report document
+                bug_report_doc = f"""BUG REPORT
+Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+Azure DevOps Issue: #{work_item_id}
+
+{'='*60}
+BUG DETAILS
+{'='*60}
+Title: {bug_title}
+Severity: {bug_severity}
+Assigned To: {assigned_to if assigned_to else 'Unassigned'}
+Status: Logged to Azure DevOps
+
+DESCRIPTION:
+{bug_desc}
+
+STEPS TO REPRODUCE:
+{bug_steps}
+
+{'='*60}
+Azure DevOps Link: https://dev.azure.com/richkome/QA-Assistant/_workitems/edit/{work_item_id}
+"""
+                st.download_button(
+                    "⬇️ Download Bug Report",
+                    bug_report_doc,
+                    f"bug_report_{work_item_id}.txt"
+                )
             else:
                 st.error(message)
 
