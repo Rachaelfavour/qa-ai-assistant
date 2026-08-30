@@ -331,61 +331,75 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                     agent_results["devops_success"] = False
                     devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ Could not create test plan: {e}")
 
+            # Store results in session state to prevent wipe on download
+            st.session_state["agent_results"] = agent_results
+            st.session_state["agent_feature"] = agent_feature
+            st.session_state["agent_plan_name"] = agent_plan_name
+            st.session_state["azure_mode_used"] = azure_mode
+
             st.write("---")
             st.success("✔ All agents completed — Status: Completed")
-            st.write("---")
-            st.write("## 📋 Agent Execution Report")
 
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Agents Run", "6")
-            with col2:
-                st.metric("Test Cases", "30")
-            with col3:
-                risk_count = len(agent_results.get("risk_df", pd.DataFrame())) if agent_results.get("risk_df") is not None else 0
-                st.metric("Risk Areas", str(risk_count))
-            with col4:
-                qscore = agent_results.get("review", {}).get("quality_score", "N/A") if agent_results.get("review") else "N/A"
-                st.metric("Quality Score", f"{qscore}/10" if qscore != "N/A" else "N/A")
+    # Display report from session state so download doesn't wipe it
+    if "agent_results" in st.session_state:
+        agent_results = st.session_state["agent_results"]
+        agent_feature = st.session_state.get("agent_feature", "")
+        agent_plan_name = st.session_state.get("agent_plan_name", "")
+        azure_mode_used = st.session_state.get("azure_mode_used", "")
 
-            with st.expander("📄 Structured Requirement — Requirement Agent"):
-                st.write(agent_results.get("requirement", ""))
-            with st.expander("🔍 Requirement Analysis — Analysis Agent"):
-                st.write(agent_results.get("analysis", ""))
-            with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
-                st.code(agent_results.get("test_cases", ""))
-            if agent_results.get("risk_df") is not None:
-                with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
-                    st.dataframe(agent_results["risk_df"], use_container_width=True)
-                    buf = io.BytesIO()
-                    agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
-                    buf.seek(0)
-                    st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            if agent_results.get("review"):
-                with st.expander("✅ Quality Review — QA Review Agent"):
-                    rv = agent_results["review"]
-                    st.write(f"**Approved:** {'Yes ✓' if rv.get('approved') else 'No — needs revision ⚠️'}")
-                    st.write(f"**Quality Score:** {rv.get('quality_score', 'N/A')}/10")
-                    st.write(f"**Completeness Notes:** {rv.get('completeness_notes', '')}")
-                    if rv.get("gaps_found"):
-                        st.write("**Gaps Found:**")
-                        for g in rv.get("gaps_found", []):
-                            st.write(f"- {g}")
-                    st.write(f"**Recommendation:** {rv.get('recommendation', '')}")
-            with st.expander("🚀 Azure DevOps — Azure DevOps Agent"):
-                if azure_mode == "🎭 Demo Mode (no Azure calls)":
-                    st.info("Demo Mode: No real Azure DevOps work items were created. Switch to Live Mode to create real items.")
-                    st.write(f"- Epic ID: {agent_results.get('epic_id')}")
-                    st.write(f"- Tasks: {len(agent_results.get('created_tasks', []))}")
-                elif agent_results.get("devops_success"):
-                    st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
-                    st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
+        st.write("---")
+        st.write("## 📋 Agent Execution Report")
 
-            full_report = f"""AGENT EXECUTION REPORT
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Agents Run", "6")
+        with col2:
+            st.metric("Test Cases", "30")
+        with col3:
+            risk_count = len(agent_results.get("risk_df", pd.DataFrame())) if agent_results.get("risk_df") is not None else 0
+            st.metric("Risk Areas", str(risk_count))
+        with col4:
+            qscore = agent_results.get("review", {}).get("quality_score", "N/A") if agent_results.get("review") else "N/A"
+            st.metric("Quality Score", f"{qscore}/10" if qscore != "N/A" else "N/A")
+
+        with st.expander("📄 Structured Requirement — Requirement Agent"):
+            st.write(agent_results.get("requirement", ""))
+        with st.expander("🔍 Requirement Analysis — Analysis Agent"):
+            st.write(agent_results.get("analysis", ""))
+        with st.expander("🧪 Generated Test Cases (30) — Test Design Agent"):
+            st.code(agent_results.get("test_cases", ""))
+        if agent_results.get("risk_df") is not None:
+            with st.expander("⚠️ Risk Matrix — Risk Assessment Agent"):
+                st.dataframe(agent_results["risk_df"], use_container_width=True)
+                buf = io.BytesIO()
+                agent_results["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
+                buf.seek(0)
+                st.download_button("⬇️ Download Risk Matrix", buf, "risk_matrix.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        if agent_results.get("review"):
+            with st.expander("✅ Quality Review — QA Review Agent"):
+                rv = agent_results["review"]
+                st.write(f"**Approved:** {'Yes ✓' if rv.get('approved') else 'No — needs revision ⚠️'}")
+                st.write(f"**Quality Score:** {rv.get('quality_score', 'N/A')}/10")
+                st.write(f"**Completeness Notes:** {rv.get('completeness_notes', '')}")
+                if rv.get("gaps_found"):
+                    st.write("**Gaps Found:**")
+                    for g in rv.get("gaps_found", []):
+                        st.write(f"- {g}")
+                st.write(f"**Recommendation:** {rv.get('recommendation', '')}")
+        with st.expander("🚀 Azure DevOps — Azure DevOps Agent"):
+            if azure_mode_used == "🎭 Demo Mode (no Azure calls)":
+                st.info("Demo Mode: No real Azure DevOps work items were created. Switch to Live Mode to create real items.")
+                st.write(f"- Epic ID: {agent_results.get('epic_id')}")
+                st.write(f"- Tasks: {len(agent_results.get('created_tasks', []))}")
+            elif agent_results.get("devops_success"):
+                st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
+                st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
+
+        full_report = f"""AGENT EXECUTION REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Feature: {agent_feature}
 Test Plan: {agent_plan_name}
-Azure Mode: {azure_mode}
+Azure Mode: {azure_mode_used}
 
 Pipeline:
 🤖 QA Orchestrator
@@ -418,7 +432,7 @@ QUALITY REVIEW — QA Review Agent
 {'='*60}
 {json.dumps(agent_results.get('review', {}), indent=2) if agent_results.get('review') else 'N/A'}
 """
-            st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
+        st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
 
 # ============================================
 # MANUAL TOOLS MODE
@@ -602,7 +616,7 @@ ANALYSIS:
                     st.error(f"Error: {e}")
 
     # ============================================
-    # BUG REPORT — always available, dynamic assignment, download report
+    # BUG REPORT — always available, dynamic assignment, download persists
     # ============================================
     st.write("---")
     st.write("### 🐛 Bug Report")
@@ -634,8 +648,8 @@ ANALYSIS:
                     bug_title, bug_severity, bug_desc, bug_steps, assigned_to
                 )
             if success:
-                st.success(message)
-                bug_report_doc = f"""BUG REPORT
+                st.session_state["bug_success_message"] = message
+                st.session_state["bug_report_doc"] = f"""BUG REPORT
 Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 Azure DevOps Issue: #{work_item_id}
 
@@ -656,13 +670,19 @@ STEPS TO REPRODUCE:
 {'='*60}
 Azure DevOps Link: https://dev.azure.com/richkome/QA-Assistant/_workitems/edit/{work_item_id}
 """
-                st.download_button(
-                    "⬇️ Download Bug Report",
-                    bug_report_doc,
-                    f"bug_report_{work_item_id}.txt"
-                )
+                st.session_state["bug_report_filename"] = f"bug_report_{work_item_id}.txt"
             else:
+                st.session_state["bug_success_message"] = None
                 st.error(message)
+
+    # Show success and download button from session state so they persist
+    if st.session_state.get("bug_success_message"):
+        st.success(st.session_state["bug_success_message"])
+        st.download_button(
+            "⬇️ Download Bug Report",
+            st.session_state["bug_report_doc"],
+            st.session_state["bug_report_filename"]
+        )
 
 # ============================================
 # FEEDBACK SUMMARY
