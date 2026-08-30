@@ -6,6 +6,9 @@ import io
 import datetime
 import requests
 import base64
+from docx import Document
+from docx.shared import Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from ai_helper import call_openai
 
 # Load data
@@ -64,6 +67,25 @@ def flatten_value(v):
     if isinstance(v, list):
         return ", ".join(str(item) for item in v)
     return v
+
+def make_word_doc(title, sections_dict):
+    """Generate a Word document from a title and dict of section heading -> content."""
+    doc = Document()
+    # Title
+    title_para = doc.add_heading(title, level=0)
+    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.add_paragraph(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    doc.add_paragraph()
+    for heading, body in sections_dict.items():
+        doc.add_heading(heading, level=1)
+        # Clean markdown bold markers
+        clean_body = re.sub(r"\*\*(.*?)\*\*", r"\1", str(body))
+        doc.add_paragraph(clean_body)
+        doc.add_paragraph()
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
 
 def get_azure_devops_users():
     try:
@@ -331,16 +353,15 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                     agent_results["devops_success"] = False
                     devops_placeholder.write(f"🚀 **Azure DevOps Agent**\n⚠️ Could not create test plan: {e}")
 
-            # Store results in session state to prevent wipe on download
+            # Store in session state to prevent wipe on download click
             st.session_state["agent_results"] = agent_results
             st.session_state["agent_feature"] = agent_feature
             st.session_state["agent_plan_name"] = agent_plan_name
             st.session_state["azure_mode_used"] = azure_mode
-
             st.write("---")
             st.success("✔ All agents completed — Status: Completed")
 
-    # Display report from session state so download doesn't wipe it
+    # Display report from session state
     if "agent_results" in st.session_state:
         agent_results = st.session_state["agent_results"]
         agent_feature = st.session_state.get("agent_feature", "")
@@ -395,44 +416,24 @@ if platform_mode == "🚀 Run Full QA Workflow (Orchestrator)":
                 st.success(f"Epic #{agent_results.get('epic_id')} created with {len(agent_results.get('created_tasks', []))} Tasks")
                 st.markdown(f"[View Test Plan in Azure DevOps]({agent_results.get('devops_url', '')})")
 
-        full_report = f"""AGENT EXECUTION REPORT
-Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-Feature: {agent_feature}
-Test Plan: {agent_plan_name}
-Azure Mode: {azure_mode_used}
-
-Pipeline:
-🤖 QA Orchestrator
-  → 🧠 Requirement Agent (creates requirement)
-  → 🔍 Analysis Agent (critiques requirement)
-  → 🧪 Test Design Agent (designs tests)
-  → ⚠️ Risk Assessment Agent (prioritises effort)
-  → ✅ QA Review Agent (validates quality)
-  → 🚀 Azure DevOps Agent (publishes artefacts)
-
-Status: Completed
-
-{'='*60}
-STRUCTURED REQUIREMENT — Requirement Agent
-{'='*60}
-{agent_results.get('requirement', '')}
-
-{'='*60}
-REQUIREMENT ANALYSIS — Analysis Agent
-{'='*60}
-{agent_results.get('analysis', '')}
-
-{'='*60}
-GENERATED TEST CASES — Test Design Agent
-{'='*60}
-{agent_results.get('test_cases', '')}
-
-{'='*60}
-QUALITY REVIEW — QA Review Agent
-{'='*60}
-{json.dumps(agent_results.get('review', {}), indent=2) if agent_results.get('review') else 'N/A'}
-"""
-        st.download_button("⬇️ Download Agent Execution Report", full_report, "agent_execution_report.txt")
+        # Word document download
+        word_buf = make_word_doc(
+            f"Agent Execution Report — {agent_feature}",
+            {
+                "Feature": agent_feature,
+                "Test Plan": agent_plan_name,
+                "Structured Requirement": agent_results.get("requirement", ""),
+                "Requirement Analysis": agent_results.get("analysis", ""),
+                "Generated Test Cases": agent_results.get("test_cases", ""),
+                "Quality Review": json.dumps(agent_results.get("review", {}), indent=2) if agent_results.get("review") else "N/A",
+            }
+        )
+        st.download_button(
+            "⬇️ Download Agent Execution Report (.docx)",
+            word_buf,
+            "agent_execution_report.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
 # ============================================
 # MANUAL TOOLS MODE
@@ -453,7 +454,8 @@ else:
             st.session_state["rg_output"] = rg_output
     if "rg_output" in st.session_state:
         st.write(st.session_state["rg_output"])
-        st.download_button("⬇️ Download Requirement Document", st.session_state["rg_output"], "requirement_document.txt")
+        rg_word = make_word_doc("Requirement Document", {"Requirement": st.session_state["rg_output"]})
+        st.download_button("⬇️ Download Requirement Document (.docx)", rg_word, "requirement_document.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         feedback_buttons("Requirement Gathering", key_suffix="rg")
 
     st.write("---")
@@ -469,18 +471,11 @@ else:
             st.session_state["ra_requirement"] = requirement_text
     if "ra_output" in st.session_state:
         st.write(st.session_state["ra_output"])
-        ra_doc = f"""REQUIREMENT ANALYSIS REPORT
-Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-ORIGINAL REQUIREMENT:
-{st.session_state.get('ra_requirement', '')}
-
-{'='*60}
-ANALYSIS:
-{'='*60}
-{st.session_state['ra_output']}
-"""
-        st.download_button("⬇️ Download Requirement Analysis", ra_doc, "requirement_analysis.txt")
+        ra_word = make_word_doc("Requirement Analysis Report", {
+            "Original Requirement": st.session_state.get("ra_requirement", ""),
+            "Analysis": st.session_state["ra_output"]
+        })
+        st.download_button("⬇️ Download Requirement Analysis (.docx)", ra_word, "requirement_analysis.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         feedback_buttons("Requirement Analysis", key_suffix="ra")
 
     st.write("---")
@@ -501,7 +496,8 @@ ANALYSIS:
     if "ac_output" in st.session_state:
         formatted = st.session_state["ac_output"].replace("\nGiven", "  \nGiven").replace("\nWhen", "  \nWhen").replace("\nThen", "  \nThen").replace("\nAnd", "  \nAnd")
         st.markdown(formatted)
-        st.download_button("⬇️ Download Acceptance Criteria", st.session_state["ac_output"], "acceptance_criteria.txt")
+        ac_word = make_word_doc("Acceptance Criteria", {"Acceptance Criteria": st.session_state["ac_output"]})
+        st.download_button("⬇️ Download Acceptance Criteria (.docx)", ac_word, "acceptance_criteria.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         feedback_buttons("Acceptance Criteria", key_suffix="ac")
 
     st.write("---")
@@ -516,7 +512,8 @@ ANALYSIS:
             st.session_state["tc_output"] = tc_out
     if "tc_output" in st.session_state:
         st.code(st.session_state["tc_output"])
-        st.download_button("⬇️ Download Test Cases", st.session_state["tc_output"], "test_cases.txt")
+        tc_word = make_word_doc("Test Cases", {"Test Cases": st.session_state["tc_output"]})
+        st.download_button("⬇️ Download Test Cases (.docx)", tc_word, "test_cases.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         feedback_buttons("Test Case Generator", key_suffix="tc")
 
     st.write("---")
@@ -531,7 +528,8 @@ ANALYSIS:
             st.session_state["uc_output"] = uc_out
     if "uc_output" in st.session_state:
         st.write(st.session_state["uc_output"])
-        st.download_button("⬇️ Download Use Case", st.session_state["uc_output"], "use_case.txt")
+        uc_word = make_word_doc("Use Case Document", {"Use Case": st.session_state["uc_output"]})
+        st.download_button("⬇️ Download Use Case (.docx)", uc_word, "use_case.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         feedback_buttons("Use Case Generator", key_suffix="uc")
 
     st.write("---")
@@ -556,7 +554,7 @@ ANALYSIS:
         buf = io.BytesIO()
         st.session_state["risk_df"].to_excel(buf, index=False, sheet_name="Risk Analysis")
         buf.seek(0)
-        st.download_button("⬇️ Download Risk Analysis", buf, "risk_analysis.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("⬇️ Download Risk Analysis (.xlsx)", buf, "risk_analysis.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         feedback_buttons("Risk Analysis", key_suffix="risk")
 
     st.write("---")
@@ -589,7 +587,7 @@ ANALYSIS:
         buf = io.BytesIO()
         df.to_excel(buf, index=False, sheet_name="Test Cases")
         buf.seek(0)
-        st.download_button("⬇️ Download Excel File", buf, "test_cases.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button("⬇️ Download Excel File (.xlsx)", buf, "test_cases.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         feedback_buttons("Excel Export", key_suffix="excel")
 
     st.write("---")
@@ -616,7 +614,7 @@ ANALYSIS:
                     st.error(f"Error: {e}")
 
     # ============================================
-    # BUG REPORT — always available, dynamic assignment, download persists
+    # BUG REPORT — always available, dynamic assignment, Word download persists
     # ============================================
     st.write("---")
     st.write("### 🐛 Bug Report")
@@ -649,39 +647,36 @@ ANALYSIS:
                 )
             if success:
                 st.session_state["bug_success_message"] = message
-                st.session_state["bug_report_doc"] = f"""BUG REPORT
-Generated: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-Azure DevOps Issue: #{work_item_id}
-
-{'='*60}
-BUG DETAILS
-{'='*60}
-Title:       {bug_title}
-Severity:    {bug_severity}
-Assigned To: {assigned_to if assigned_to else 'Unassigned'}
-Status:      Logged to Azure DevOps
-
-DESCRIPTION:
-{bug_desc}
-
-STEPS TO REPRODUCE:
-{bug_steps}
-
-{'='*60}
-Azure DevOps Link: https://dev.azure.com/richkome/QA-Assistant/_workitems/edit/{work_item_id}
-"""
-                st.session_state["bug_report_filename"] = f"bug_report_{work_item_id}.txt"
+                st.session_state["bug_work_item_id"] = work_item_id
+                st.session_state["bug_report_data"] = {
+                    "title": bug_title,
+                    "severity": bug_severity,
+                    "assigned_to": assigned_to,
+                    "desc": bug_desc,
+                    "steps": bug_steps,
+                    "work_item_id": work_item_id
+                }
             else:
                 st.session_state["bug_success_message"] = None
                 st.error(message)
 
-    # Show success and download button from session state so they persist
     if st.session_state.get("bug_success_message"):
         st.success(st.session_state["bug_success_message"])
+        d = st.session_state.get("bug_report_data", {})
+        bug_word = make_word_doc("Bug Report", {
+            "Bug Title": d.get("title", ""),
+            "Severity": d.get("severity", ""),
+            "Assigned To": d.get("assigned_to") or "Unassigned",
+            "Azure DevOps Issue": f"#{d.get('work_item_id', '')}",
+            "Azure DevOps Link": f"https://dev.azure.com/richkome/QA-Assistant/_workitems/edit/{d.get('work_item_id', '')}",
+            "Description": d.get("desc", ""),
+            "Steps to Reproduce": d.get("steps", "")
+        })
         st.download_button(
-            "⬇️ Download Bug Report",
-            st.session_state["bug_report_doc"],
-            st.session_state["bug_report_filename"]
+            "⬇️ Download Bug Report (.docx)",
+            bug_word,
+            f"bug_report_{d.get('work_item_id', 'report')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
 # ============================================
