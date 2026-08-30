@@ -15,7 +15,7 @@ def get_client():
     return OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
 
 
-def call_openai(system_prompt: str, user_prompt: str, model: str = "llama-3.3-70b-versatile") -> str:
+def call_openai(system_prompt: str, user_prompt: str, model: str = "llama-3.1-8b-instant") -> str:
     client = get_client()
     try:
         response = client.chat.completions.create(
